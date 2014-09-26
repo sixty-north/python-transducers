@@ -74,8 +74,6 @@ class Transducer(metaclass=ABCMeta):
     """
 
     def __init__(self, reducer):
-        if not callable(reducer):
-            raise TypeError("Transducer callable {!r} is not callable".format(reducer))
         self._reducer = reducer
 
     def __call__(self, result, item):
@@ -320,7 +318,6 @@ def generate(transducer, iterable):
 
 # Functions to exercise the above
 
-
 def test_windowing():
     r = transduce(transducer=windowing(3, padding=None),
                   reducer=appender,
@@ -331,21 +328,21 @@ def test_windowing():
 
 def test_lazy():
     r = generate(transducer=compose(
-                                 mapping(lambda x: x*x),
-                                 filtering(lambda x: x % 5 != 0),
-                                 taking(6),
-                                 dropping_while(lambda x: x < 15),
-                                 distinct()),
-                  iterable=range(20))
+                     mapping(lambda x: x*x),
+                     filtering(lambda x: x % 5 != 0),
+                     taking(6),
+                     dropping_while(lambda x: x < 15),
+                     distinct()),
+                 iterable=range(20))
     print(list(r))
 
 def test_transduce():
     r = transduce(transducer=compose(
-                                 mapping(lambda x: x*x),
-                                 filtering(lambda x: x % 5 != 0),
-                                 taking(6),
-                                 dropping_while(lambda x: x < 15),
-                                 distinct()),
+                      mapping(lambda x: x*x),
+                      filtering(lambda x: x % 5 != 0),
+                      taking(6),
+                      dropping_while(lambda x: x < 15),
+                      distinct()),
                   reducer=appender,
                   iterable=range(20),
                   init=[])

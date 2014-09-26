@@ -3,8 +3,11 @@ import sys
 from time import sleep
 from coroutine import coroutine
 from functools import partial
-from transducer import compose, mapping, filtering, taking, dropping_while, distinct, identity, pairwise, batching, _UNSET
+from transducer import compose, mapping, filtering, identity, pairwise, batching, _UNSET
 from transducer import Reduced
+
+
+# Sinks
 
 @coroutine
 def rprint(sep='\n', end=''):
@@ -34,7 +37,9 @@ class NullSink:
         pass
 
 
-def make_stream(iterable, target):
+# Sources
+
+def iterable_source(iterable, target):
     """Convert an iterable into a stream of events."""
     for item in iterable:
         target.send(item)
@@ -56,6 +61,8 @@ def poisson_source(rate, event, target):
         target.send(event(duration))
 
 
+# Reducers
+
 def sender(result, item):
     """A reducer for sending items to a coroutine.
 
@@ -65,6 +72,9 @@ def sender(result, item):
     """
     result.send(item)
     return result
+
+
+# Transducible processes
 
 @coroutine
 def rreduce(reducer, target, initializer=_UNSET):
@@ -79,8 +89,8 @@ def rreduce(reducer, target, initializer=_UNSET):
         initializer: Optional initializer for reduction. If not provided, initial()
             will be called on the reducer to obtain the initial value.
     """
+    accumulator = reducer.initial() if initializer is _UNSET else initializer
     try:
-        accumulator = reducer.initial() if initializer is _UNSET else initializer
         while True:
             accumulator = reducer.step(accumulator, (yield))
             if isinstance(accumulator, Reduced):
@@ -93,9 +103,12 @@ def rreduce(reducer, target, initializer=_UNSET):
     target.close()
     raise StopIteration
 
+
 def transduce(transducer, reducer, source, sink):
     source(rreduce(transducer(reducer), target=sink, initializer=sink))
 
+
+# Functions to exercise the above
 
 def main():
     transduce(transducer=compose(
