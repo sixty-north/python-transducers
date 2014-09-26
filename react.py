@@ -1,51 +1,19 @@
-from functools import partial
-import operator
 import random
 import sys
 from time import sleep
 from coroutine import coroutine
-from chrono import now
-from transducer import compose, mapping, filtering, taking, dropping_while, distinct, identity, pairwise, batching
-
-
-@coroutine
-def rmap(func, target):
-    try:
-        while True:
-            event = (yield)
-            result = func(event)
-            target.send(result)
-    except GeneratorExit:
-        target.close()
-        raise StopIteration
-
-
-@coroutine
-def rfilter(pred, target):
-    try:
-        while True:
-            event = (yield)
-            if pred(event):
-                target.send(event)
-    except GeneratorExit:
-        target.close()
-        raise StopIteration
-
-
-@coroutine
-def rreduce(func, target, initializer=None):
-    try:
-        accumulator = (yield) if initializer is None else initializer
-        while True:
-            accumulator = func(accumulator, (yield))
-    except GeneratorExit:
-        target.send(accumulator)
-        target.close()
-        raise StopIteration
-
+from functools import partial
+from transducer import compose, mapping, filtering, taking, dropping_while, distinct, identity, pairwise, batching, _UNSET
+from transducer import Reduced
 
 @coroutine
 def rprint(sep='\n', end=''):
+    """A coroutine sink which prints received items stdout
+
+    Args:
+        sep: Optional separator to be printed between received items.
+        end: Optional terminator to be printed after the last item.
+    """
     try:
         sys.stdout.write(str((yield)))
         while True:
@@ -56,60 +24,32 @@ def rprint(sep='\n', end=''):
         raise StopIteration
 
 
-class Only:
-    _NOT_SET = object()
-
-    def __init__(self):
-        self._value = Only._NOT_SET
+class NullSink:
+    """The /dev/null of coroutine sinks."""
 
     def send(self, item):
-        self._value = item
+        pass
 
-    @property
-    def value(self):
-        if self._value is Only._NOT_SET:
-            raise ValueError("Only value not set")
-        return self._value
-
-    def close(self):
-        return
+    def close(self, item):
+        pass
 
 
 def make_stream(iterable, target):
+    """Convert an iterable into a stream of events."""
     for item in iterable:
         target.send(item)
     target.close()
 
 
-def is_odd(x):
-    return x % 2 != 0
-
-@coroutine
-def timestamp(target):
-    try:
-        while True:
-            _ = (yield)
-            target.send(now())
-    except GeneratorExit:
-        target.close()
-        raise StopIteration
-
-
-@coroutine
-def timedelta(target):  # Generalise to moving window
-    try:
-        previous = (yield)
-        while True:
-            current = (yield)
-            delta = current - previous
-            target.send(delta)
-            previous = current
-    except GeneratorExit:
-        target.close()
-        raise StopIteration
-
-
 def poisson_source(rate, event, target):
+    """Send events at random times with uniform probability.
+
+    Args:
+        rate: The average number of events to send per second
+        event: A function or type used to construct the item to send from a
+            float duration.
+        target: The target coroutine or sink.
+    """
     while True:
         duration = random.expovariate(rate)
         sleep(duration)
@@ -117,15 +57,47 @@ def poisson_source(rate, event, target):
 
 
 def sender(result, item):
+    """A reducer for sending items to a coroutine.
+
+    Args:
+        result: A coroutine or sink.
+        item: An item to send.
+    """
     result.send(item)
     return result
 
+@coroutine
+def rreduce(reducer, target, initializer=_UNSET):
+    """Reduce for coroutines.
+
+    Args:
+        reducer: The reducing object, which should support the initial(), step()
+            and complete() methods.
+
+        target: The coroutine or sink to which results will be sent.
+
+        initializer: Optional initializer for reduction. If not provided, initial()
+            will be called on the reducer to obtain the initial value.
+    """
+    try:
+        accumulator = reducer.initial() if initializer is _UNSET else initializer
+        while True:
+            accumulator = reducer.step(accumulator, (yield))
+            if isinstance(accumulator, Reduced):
+                accumulator = accumulator.value
+                break
+    except GeneratorExit:
+        pass
+
+    target.send(reducer.complete(accumulator))
+    target.close()
+    raise StopIteration
 
 def transduce(transducer, reducer, source, sink):
     source(rreduce(transducer(reducer), target=sink, initializer=sink))
 
 
-def main2():
+def main():
     transduce(transducer=compose(
                   mapping(lambda x: x > 0.5),
                   pairwise(),
@@ -136,32 +108,6 @@ def main2():
               source=partial(poisson_source, 2.0, identity),
               sink=rprint())
 
-
-def main():
-    poisson_source(2.0, bool,
-    timestamp(
-    timedelta(
-    rfilter(lambda d: d.microseconds < 100000,
-    rprint(
-    )))))
-
-    #a = [1, 2, 5, 3, 1, 4, 6, 2, 3, 4, 5, 1, 2, 8]
-    #only = Only()
-    #make_stream(a,
-    #            rfilter(is_odd,
-    #            rreduce(operator.add, rprint())))
-    #print(only.value)
-
-
-class NullSink:
-
-    def send(self, item):
-        pass
-
-    def close(self, item):
-        pass
-
-
 if __name__ == '__main__':
-    main2()
+    main()
 

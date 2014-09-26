@@ -2,6 +2,7 @@
 
 http://blog.cognitect.com/blog/2014/8/6/transducers-are-coming
 """
+from abc import abstractmethod, ABCMeta
 from collections import deque
 
 from functools import reduce
@@ -50,106 +51,174 @@ def appender(result, item):
     return result
 
 
+# Transducer infrastructure
+
+_UNSET = object()
+
+
+class Reduced:
+    """A sentinel 'box' used to return the final value of a reduction."""
+
+    def __init__(self, value):
+        self._value = value
+
+    @property
+    def value(self):
+        return self._value
+
+
+class Transducer(metaclass=ABCMeta):
+    """An Abstract Base Class for Transducers.
+
+    At least the step() method must be overridden.
+    """
+
+    def __init__(self, reducer):
+        if not callable(reducer):
+            raise TypeError("Transducer callable {!r} is not callable".format(reducer))
+        self._reducer = reducer
+
+    def __call__(self, result, item):
+        """Transducers are callable, so they can be used as reducers."""
+        return self.step(result, item)
+
+    def initial(self):
+        return self._reducer.initial()
+
+    @abstractmethod
+    def step(self, result, item):
+        """Reduce one item.
+
+        Called once for each item. Overrides should invoke the callable self._reducer
+        directly as self._reducer(...) rather than as self._reducer.step(...) so that
+        any 2-arity reduction callable can be used.
+
+        Args:
+            result: The reduced result thus far.
+            item: The new item to be combined with result to give the new result.
+
+        Returns:
+            The newly reduced result; that is, result combined in some way with
+            item to produce a new result.  If reduction needs to be terminated,
+            this method should return the sentinel Reduced(result).
+        """
+        raise NotImplementedError
+
+    def complete(self, result):
+        """Called at exactly once when reduction is complete.
+
+        Called on completion of a transducible process.
+        Consider overriding terminate() rather than this method for convenience.
+        """
+        result = self.terminate(result)
+
+        try:
+            return self._reducer.complete(result)
+        except AttributeError:
+            return result
+
+    def terminate(self, result):
+        """Optionally override to terminate the result."""
+        return result
+
+
 # Functions for creating transducers, which are themselves
 # functions which transform one reducer to another
 
 def mapping(transform):
     """Create a mapping transducer with the given transform"""
-    def transducer(reducer):
-        def result_reducer(result, item):
-            return reducer(result, transform(item))
-        return result_reducer
-    return transducer
+
+    class MappingTransducer(Transducer):
+
+        def step(self, result, item):
+            return self._reducer(result, transform(item))
+
+    return MappingTransducer
 
 
 def filtering(predicate):
     """Create a filtering transducer with the given predicate"""
-    def transducer(reducer):
-        def result_reducer(result, item):
-            return reducer(result, item) if predicate(item) else result
-        return result_reducer
-    return transducer
+
+    class FilteringTransducer(Transducer):
+
+        def step(self, result, item):
+            return self._reducer(result, item) if predicate(item) else result
+
+    return FilteringTransducer
 
 
 def mapcatting(transform):
     """Create a transducer which transforms items and concatenates the results"""
-    def transducer(reducer):
-        """
-        Args:
-            reducer: The 'concatenation' reducer.
-        """
-        def result_reducer(result, item):
-            return reduce(reducer, result, transform(item))
-        return result_reducer
-    return transducer
+
+    class MapcattingTransducer(Transducer):
+
+        def step(self, result, item):
+            return reduce(self._reducer, result, transform(item))
+
+    return MapcattingTransducer
 
 
 def taking(n):
     """Create a transducer which takes the first n items"""
     counter = 0
 
-    def transducer(reducer):
-        def result_reducer(result, item):
+    class TakingTransducer(Transducer):
+
+        def step(self, result, item):
             nonlocal counter
             if counter < n:
                 counter += 1
-                return reducer(result, item)
+                return self._reducer(result, item)
             return result
-        return result_reducer
 
-    return transducer
+    return TakingTransducer
 
 
 def dropping_while(predicate):
     """Create a transducer which drops leading items while a predicate holds"""
     dropping = True
 
-    def transducer(reducer):
-        def result_reducer(result, item):
+    class DroppingWhileTransducer(Transducer):
+
+        def step(self, result, item):
             nonlocal dropping
             dropping = dropping and predicate(item)
-            return result if dropping else reducer(result, item)
+            return result if dropping else self._reducer(result, item)
 
-        return result_reducer
-
-    return transducer
+    return DroppingWhileTransducer
 
 
 def distinct():
     """Create a transducer which filters distinct items"""
     seen = set()
 
-    def transducer(reducer):
-        def result_reducer(result, item):
+    class DistinctTransducer(Transducer):
+
+        def step(self, result, item):
             if item not in seen:
                 seen.add(item)
-                return reducer(result, item)
+                return self._reducer(result, item)
             return result
-        return result_reducer
 
-    return transducer
-
-
-_UNSET = object()
+    return DistinctTransducer
 
 
 def pairwise():
     """Create a transducer which produces successive pairs"""
-
     previous_item = _UNSET
 
-    def transducer(reducer):
-        def result_reducer(result, item):
+    class PairwiseTransducer(Transducer):
+
+        def step(self, result, item):
             nonlocal previous_item
             if previous_item is _UNSET:
                 previous_item = item
                 return result
             pair = (previous_item, item)
             previous_item = item
-            return reducer(result, pair)
-        return result_reducer
+            return self._reducer(result, pair)
 
-    return transducer
+    return PairwiseTransducer
 
 
 def batching(size):
@@ -160,17 +229,21 @@ def batching(size):
 
     pending = []
 
-    def transducer(reducer):
-        def result_reducer(result, item):
+    class BatchingTransducer(Transducer):
+
+        def step(self, result, item):
             nonlocal pending
             pending.append(item)
             if len(pending) == size:
                 batch = pending
                 pending = []
-                return reducer(result, batch)
+                return self._reducer(result, batch)
             return result
-        return result_reducer
-    return transducer
+
+        def terminate(self, result):
+            return self._reducer(result, pending)
+
+    return BatchingTransducer
 
 
 def windowing(size, padding=_UNSET):
@@ -181,41 +254,71 @@ def windowing(size, padding=_UNSET):
 
     window = deque(maxlen=size) if padding is _UNSET else deque([padding] * size, maxlen=size)
 
-    def transducer(reducer):
-        def result_reducer(result, item):
+    class WindowingTransducer(Transducer):
+
+        def step(self, result, item):
             window.append(item)
-            return reducer(result, list(window))
-        return result_reducer
-    return transducer
+            return self._reducer(result, list(window))
+
+        def terminate(self, result):
+            for _ in range(size - 1):
+                result = self.step(result, padding)
+            return result
+
+    return WindowingTransducer
 
 
-def windowing(size, padding=_UNSET):
-    """Create a transducer which produces a moving window over items."""
+def first():
+    """Create a transducer which obtains the first item, then terminates."""
 
-    if size < 1:
-        raise ValueError("windowing() size must be at least 1")
+    class FirstTransducer(Transducer):
 
-    window = deque(maxlen=size) if padding is _UNSET else deque([padding] * size, maxlen=size)
+        def step(self, result, item):
+            return Reduced(item)
 
-    def transducer(reducer):
-        def result_reducer(result, item):
-            window.append(item)
-            return reducer(result, list(window))
-        return result_reducer
-    return transducer
+    return FirstTransducer
 
 
-# TODO: Reducing!
+# Transducible processes
+
+def transduce(transducer, reducer, iterable, init=_UNSET):
+    r = transducer(reducer)
+    accumulator = r.inital() if init is _UNSET else init
+    for item in iterable:
+        accumulator = r.step(accumulator, item)
+        if isinstance(accumulator, Reduced):
+            accumulator = accumulator.value
+            break
+    return r.complete(accumulator)
 
 
+def generate(transducer, iterable):
+    """Lazy application of a transducer to an iterable."""
+    r = transducer(appender)
+    pending = deque()
+    accumulator = pending
+    reduced = False
+    for item in iterable:
+        accumulator = r.step(accumulator, item)
+        if isinstance(accumulator, Reduced):
+            accumulator = accumulator.value
+            reduced = True
 
-def transduce(transducer, reducer, init, iterable):
-    """A transducer helper for applying transducers to iterables"""
-    # The standard library reduce function can be used for applying transducers to iterables
-    return reduce(transducer(reducer), iterable, init)
+        while len(pending) > 0:
+            p = pending.popleft()
+            yield p
 
-# TODO: A lazy 'reduce' - For lazy transformations you must use sequence
+        if reduced:
+            break
 
+    r.complete(accumulator)
+
+    while len(pending) > 0:
+        p = pending.popleft()
+        yield p
+
+
+# Functions to exercise the above
 
 
 def test_windowing():
@@ -225,7 +328,18 @@ def test_windowing():
                   init=[])
     print(r)
 
-def main():
+
+def test_lazy():
+    r = generate(transducer=compose(
+                                 mapping(lambda x: x*x),
+                                 filtering(lambda x: x % 5 != 0),
+                                 taking(6),
+                                 dropping_while(lambda x: x < 15),
+                                 distinct()),
+                  iterable=range(20))
+    print(list(r))
+
+def test_transduce():
     r = transduce(transducer=compose(
                                  mapping(lambda x: x*x),
                                  filtering(lambda x: x % 5 != 0),
@@ -238,4 +352,4 @@ def main():
     print(r)
 
 if __name__ == '__main__':
-   test_windowing()
+    test_windowing()
