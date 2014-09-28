@@ -43,6 +43,14 @@ def identity(x):
     return x
 
 
+def true(*args, **kwargs):
+    return True
+
+
+def false(*args, **kwargs):
+    return False
+
+
 # Example reducers
 
 def appender(result, item):
@@ -143,6 +151,40 @@ def filtering(predicate):
             return self._reducer(result, item) if predicate(item) else result
 
     return FilteringTransducer
+
+
+def reducing(reducer, init=_UNSET):
+    """Create a reducing transducer with the given reducer"""
+
+    accumulator = init
+
+    class ReducingTransducer(Transducer):
+
+        def step(self, result, item):
+            nonlocal accumulator
+            accumulator = item if accumulator is _UNSET else reducer(accumulator, item)
+            return result
+
+        def terminate(self, result):
+            return accumulator
+
+    return ReducingTransducer
+
+
+def enumerating(start=0):
+    """Create a transducer which enumerates items."""
+
+    counter = start
+
+    class EnumeratingTransducer(Transducer):
+
+        def step(self, result, item):
+            nonlocal counter
+            index = counter
+            counter += 1
+            return self._reducer(result, (index, item))
+
+    return EnumeratingTransducer
 
 
 def mapcatting(transform):
@@ -266,15 +308,112 @@ def windowing(size, padding=_UNSET):
     return WindowingTransducer
 
 
-def first():
+def first(predicate=None):
     """Create a transducer which obtains the first item, then terminates."""
+
+    predicate = true if predicate is None else predicate
 
     class FirstTransducer(Transducer):
 
         def step(self, result, item):
-            return Reduced(item)
+            return Reduced(item) if predicate(item) else result
 
     return FirstTransducer
+
+
+def last(predicate=None):
+    """Create a transducer which obtains the last item."""
+
+    predicate = true if predicate is None else predicate
+    last_seen = None
+
+    class LastTransducer(Transducer):
+
+        def step(self, result, item):
+            nonlocal last_seen
+            if predicate(item):
+                last_seen = item
+            return result
+
+        def terminate(self, result):
+            return last_seen
+
+    return LastTransducer
+
+
+def reversing():
+
+    items = deque()
+
+    class ReversingTransducer(Transducer):
+
+        def step(self, result, item):
+            items.appendleft(item)
+            return result
+
+        def terminate(self, result):
+            return items
+
+    return ReversingTransducer
+
+
+def ordering(key=None, reverse=False):
+
+    key = identity if key is None else key
+    items = []
+
+    class OrderingTransducer(Transducer):
+
+        def step(self, result, item):
+            items.append(item)
+            return result
+
+        def terminate(self, result):
+            items.sort(key=key, reverse=reverse)
+            return items
+
+    return OrderingTransducer
+
+
+def counting(predicate=None):
+
+    predicate = true if predicate is None else predicate
+
+    count = 0
+
+    class CountingTransducer(Transducer):
+
+        def step(self, result, item):
+            nonlocal count
+            if predicate(item):
+                count += 1
+            return result
+
+        def terminate(self, result):
+            return count
+
+    return CountingTransducer
+
+
+def grouping(key=None):
+
+    key = identity if key is None else key
+
+    groups = {}
+
+    class GroupingTransducer(Transducer):
+
+        def step(self, result, item):
+            k = key(item)
+            if k not in groups:
+                groups[k] = []
+            groups[k].append(item)
+            return result
+
+        def terminate(self, result):
+            return groups
+
+    return GroupingTransducer
 
 
 # Transducible processes
