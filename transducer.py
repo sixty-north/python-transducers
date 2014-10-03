@@ -4,37 +4,35 @@ http://blog.cognitect.com/blog/2014/8/6/transducers-are-coming
 """
 from abc import abstractmethod, ABCMeta
 from collections import deque
-
 from functools import reduce
+from itertools import chain
 
 
-def compose(*fs):
+def compose(f, *fs):
     """Compose functions right to left.
 
     compose(f, g, h)(x) -> f(g(h(x)))
 
     Args:
-        *fs: The rightmost function passed can accept any arguments and
-            the returned function will have the same signature as
-            this last provided function.  All preceding functions
-            must be unary.
+        f, *fs: The head and rest of a sequence of callables. The
+                rightmost function passed can accept any arguments and
+                the returned function will have the same signature as
+                this last provided function.  All preceding functions
+                must be unary.
 
     Returns:
         The composition of the argument functions. The returned
         function will accept the same arguments as the rightmost
         passed in function.
     """
-    if len(fs) < 1:
-        raise TypeError("Cannot compose fewer than one functions")
-    rfs = list(reversed(fs))
+    rfs = list(chain([f], fs))
+    rfs.reverse()
 
     def composed(*args, **kwargs):
-        i = iter(rfs)
-        f0 = next(i)
-        result = f0(*args, **kwargs)
-        for fn in i:
-            result = fn(result)
-        return result
+        return reduce(
+            lambda result, fn: fn(result),
+            rfs[1:],
+            rfs[0](*args, **kwargs))
 
     return composed
 
