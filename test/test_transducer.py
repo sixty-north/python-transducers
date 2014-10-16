@@ -1,6 +1,6 @@
 import operator
 import unittest
-from transducer import transduce, mapping, appender, filtering, reducing, enumerating, first, last, reversing, ordering, counting
+from transducer import transduce, mapping, appender, filtering, reducing, enumerating, first, last, reversing, ordering, counting, scanning
 
 
 class MyTestCase(unittest.TestCase):
@@ -32,6 +32,20 @@ class MyTestCase(unittest.TestCase):
                            iterable=range(10),
                            init=[])
         self.assertEqual(result, 55)
+
+    def test_scanning(self):
+        result = transduce(transducer=scanning(operator.add),
+                           reducer=appender,
+                           iterable=range(5),
+                           init=[])
+        self.assertListEqual(result, [0, 1, 3, 6, 10])
+
+    def test_scanning_within_init(self):
+        result = transduce(transducer=scanning(operator.add, 3),
+                           reducer=appender,
+                           iterable=range(5),
+                           init=[])
+        self.assertListEqual(result, [3, 4, 6, 9, 13])
 
     def test_enumerating(self):
         result = transduce(transducer=enumerating(),

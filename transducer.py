@@ -170,6 +170,19 @@ def reducing(reducer, init=_UNSET):
 
     return ReducingTransducer
 
+def scanning(reducer, init=_UNSET):
+    """Create a scanning reducer."""
+
+    accumulator = init
+
+    class ScanningTransducer(Transducer):
+
+        def step(self, result, item):
+            nonlocal accumulator
+            accumulator = item if accumulator is _UNSET else reducer(accumulator, item)
+            return self._reducer(result, accumulator)
+
+    return ScanningTransducer
 
 def enumerating(start=0):
     """Create a transducer which enumerates items."""
