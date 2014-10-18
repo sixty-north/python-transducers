@@ -1,11 +1,12 @@
 import unittest
-from transducers.transducer import (mapping, filtering, generate, compose, taking, dropping_while, distinct)
+from transducers.lazy import transduce
+from transducers.transducer import (mapping, filtering, compose, taking, dropping_while, distinct)
 
 
 class TestComposedTransducers(unittest.TestCase):
 
     def test_chained_transducers(self):
-        result = generate(transducer=compose(
+        result = transduce(transducer=compose(
                          mapping(lambda x: x*x),
                          filtering(lambda x: x % 5 != 0),
                          taking(6),

@@ -4,9 +4,11 @@ import sys
 from time import sleep
 from functools import partial
 
-from transducers.transducer import compose, mapping, filtering, identity, pairwise, batching, _UNSET
+from transducers.transducer import _UNSET
 from transducers.transducer import Reduced
 
+
+# Coroutine infrastructure
 
 def coroutine(func):
     def start(*args, **kwargs):
@@ -14,6 +16,7 @@ def coroutine(func):
         next(g)
         return g
     return start
+
 
 # Sinks
 
@@ -97,7 +100,7 @@ def sender(result, item):
     return result
 
 
-# Transducible processes
+# A reactive reduce co-routine. We can build everything else in terms of reduce
 
 @coroutine
 def rreduce(reducer, target, initializer=_UNSET):
@@ -127,24 +130,8 @@ def rreduce(reducer, target, initializer=_UNSET):
     raise StopIteration
 
 
+# Transducible processes
+
 def transduce(transducer, reducer, source, sink):
     source(rreduce(transducer(reducer), target=sink, initializer=sink))
-
-
-# Functions to exercise the above
-
-def main():
-    transduce(transducer=compose(
-                  mapping(lambda x: x > 0.5),
-                  pairwise(),
-                  filtering(lambda x: x[0]),
-                  mapping(lambda x: x[1]),
-                  batching(3)),
-              reducer=sender,
-              source=partial(poisson_source, 2.0, identity),
-              sink=rprint())
-
-if __name__ == '__main__':
-    main()
-
 

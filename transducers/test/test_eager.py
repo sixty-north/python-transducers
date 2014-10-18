@@ -1,6 +1,7 @@
 import operator
 import unittest
-from transducers.transducer import (transduce, mapping, appender, filtering, reducing, enumerating, first, last,
+from transducers.eager import transduce
+from transducers.transducer import ( mapping, appender, filtering, reducing, enumerating, first, last,
                                     reversing, ordering, counting, scanning, compose, taking, dropping_while, distinct)
 
 
