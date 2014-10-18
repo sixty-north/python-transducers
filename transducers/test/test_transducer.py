@@ -1,6 +1,6 @@
 import operator
 import unittest
-from transducer import transduce, mapping, appender, filtering, reducing, enumerating, first, last, reversing, ordering, counting, scanning
+from transducers.transducer import transduce, mapping, appender, filtering, reducing, enumerating, first, last, reversing, ordering, counting, scanning
 
 
 class MyTestCase(unittest.TestCase):

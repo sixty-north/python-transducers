@@ -1,10 +1,12 @@
 import random
 import sys
 from time import sleep
-from coroutine import coroutine
 from functools import partial
-from transducer import compose, mapping, filtering, identity, pairwise, batching, _UNSET
-from transducer import Reduced
+
+from transducers import coroutine
+from transducers.transducer import compose, mapping, filtering, identity, pairwise, batching, _UNSET
+from transducers.transducer import Reduced
+
 
 
 # Sinks
