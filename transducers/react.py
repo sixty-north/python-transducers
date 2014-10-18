@@ -2,10 +2,8 @@ from collections import deque
 import random
 import sys
 from time import sleep
-from functools import partial
 
-from transducers.transducer import _UNSET
-from transducers.transducer import Reduced
+from transducers.transducer import (Reduced, _UNSET)
 
 
 # Coroutine infrastructure
