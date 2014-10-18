@@ -1,9 +1,10 @@
 import operator
 import unittest
-from transducers.transducer import transduce, mapping, appender, filtering, reducing, enumerating, first, last, reversing, ordering, counting, scanning
+from transducers.transducer import (transduce, mapping, appender, filtering, reducing, enumerating, first, last,
+                                    reversing, ordering, counting, scanning, compose, taking, dropping_while, distinct)
 
 
-class MyTestCase(unittest.TestCase):
+class TestSingleTransducers(unittest.TestCase):
 
     def test_mapping(self):
         result = transduce(transducer=mapping(lambda x: x*x),
@@ -137,6 +138,21 @@ class MyTestCase(unittest.TestCase):
                            iterable="The quick brown fox jumped".split(),
                            init=[])
         self.assertEqual(result, 2)
+
+
+class TestComposedTransducers(unittest.TestCase):
+
+    def test_chained_transducers(self):
+        result = transduce(transducer=compose(
+                          mapping(lambda x: x*x),
+                          filtering(lambda x: x % 5 != 0),
+                          taking(6),
+                          dropping_while(lambda x: x < 15),
+                          distinct()),
+                      reducer=appender,
+                      iterable=range(20),
+                      init=[])
+        self.assertSequenceEqual(result, [16, 36, 49])
 
 
 if __name__ == '__main__':

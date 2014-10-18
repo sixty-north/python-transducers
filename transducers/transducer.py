@@ -465,38 +465,3 @@ def generate(transducer, iterable):
         p = pending.popleft()
         yield p
 
-
-# Functions to exercise the above
-
-def test_windowing():
-    r = transduce(transducer=windowing(3, padding=None),
-                  reducer=appender,
-                  iterable=range(20),
-                  init=[])
-    print(r)
-
-
-def test_lazy():
-    r = generate(transducer=compose(
-                     mapping(lambda x: x*x),
-                     filtering(lambda x: x % 5 != 0),
-                     taking(6),
-                     dropping_while(lambda x: x < 15),
-                     distinct()),
-                 iterable=range(20))
-    print(list(r))
-
-def test_transduce():
-    r = transduce(transducer=compose(
-                      mapping(lambda x: x*x),
-                      filtering(lambda x: x % 5 != 0),
-                      taking(6),
-                      dropping_while(lambda x: x < 15),
-                      distinct()),
-                  reducer=appender,
-                  iterable=range(20),
-                  init=[])
-    print(r)
-
-if __name__ == '__main__':
-    test_windowing()

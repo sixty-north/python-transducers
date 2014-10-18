@@ -1,13 +1,19 @@
+from collections import deque
 import random
 import sys
 from time import sleep
 from functools import partial
 
-from transducers import coroutine
 from transducers.transducer import compose, mapping, filtering, identity, pairwise, batching, _UNSET
 from transducers.transducer import Reduced
 
 
+def coroutine(func):
+    def start(*args, **kwargs):
+        g = func(*args, **kwargs)
+        next(g)
+        return g
+    return start
 
 # Sinks
 
@@ -35,9 +41,24 @@ class NullSink:
     def send(self, item):
         pass
 
-    def close(self, item):
+    def close(self):
         pass
 
+
+class IterableSink:
+
+    def __init__(self):
+        self._items = deque()
+
+    def send(self, item):
+        self._items.append(item)
+
+    def close(self):
+        pass
+
+    def __iter__(self):
+        while len(self._items) > 0:
+            yield self._items.popleft()
 
 # Sources
 
@@ -125,4 +146,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
