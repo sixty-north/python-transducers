@@ -3,7 +3,8 @@ import random
 import sys
 from time import sleep
 
-from transducers.transducer import (Reduced, _UNSET)
+from transducers._util import UNSET
+from transducers.transducer import Reduced
 
 
 # Coroutine infrastructure
@@ -63,6 +64,7 @@ class IterableSink:
 
 # Sources
 
+
 def iterable_source(iterable, target):
     """Convert an iterable into a stream of events."""
     for item in iterable:
@@ -101,7 +103,7 @@ def sender(result, item):
 # A reactive reduce co-routine. We can build everything else in terms of reduce
 
 @coroutine
-def rreduce(reducer, target, initializer=_UNSET):
+def rreduce(reducer, target, initializer=UNSET):
     """Reduce for coroutines.
 
     Args:
@@ -113,7 +115,7 @@ def rreduce(reducer, target, initializer=_UNSET):
         initializer: Optional initializer for reduction. If not provided, initial()
             will be called on the reducer to obtain the initial value.
     """
-    accumulator = reducer.initial() if initializer is _UNSET else initializer
+    accumulator = reducer.initial() if initializer is UNSET else initializer
     try:
         while True:
             accumulator = reducer.step(accumulator, (yield))
@@ -132,4 +134,3 @@ def rreduce(reducer, target, initializer=_UNSET):
 
 def transduce(transducer, reducer, source, sink):
     source(rreduce(transducer(reducer), target=sink, initializer=sink))
-

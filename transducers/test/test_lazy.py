@@ -1,6 +1,7 @@
 import unittest
+from transducers.functional import compose
 from transducers.lazy import transduce
-from transducers.transducer import (mapping, filtering, compose, taking, dropping_while, distinct)
+from transducers.transducer import (mapping, filtering, taking, dropping_while, distinct)
 
 
 class TestComposedTransducers(unittest.TestCase):

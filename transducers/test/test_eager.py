@@ -1,8 +1,9 @@
 import operator
 import unittest
 from transducers.eager import transduce
+from transducers.functional import compose
 from transducers.transducer import ( mapping, appender, filtering, reducing, enumerating, first, last,
-                                    reversing, ordering, counting, scanning, compose, taking, dropping_while, distinct)
+                                    reversing, ordering, counting, scanning, taking, dropping_while, distinct)
 
 
 class TestSingleTransducers(unittest.TestCase):

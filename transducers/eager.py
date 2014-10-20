@@ -1,11 +1,12 @@
-from transducers.transducer import _UNSET, Reduced
+from transducers._util import UNSET
+from transducers.transducer import Reduced
 
 
 # Transducible processes
 
-def transduce(transducer, reducer, iterable, init=_UNSET):
+def transduce(transducer, reducer, iterable, init=UNSET):
     r = transducer(reducer)
-    accumulator = r.inital() if init is _UNSET else init
+    accumulator = r.inital() if init is UNSET else init
     for item in iterable:
         accumulator = r.step(accumulator, item)
         if isinstance(accumulator, Reduced):

@@ -5,48 +5,8 @@ http://blog.cognitect.com/blog/2014/8/6/transducers-are-coming
 from abc import abstractmethod, ABCMeta
 from collections import deque
 from functools import reduce
-from itertools import chain
-
-
-def compose(f, *fs):
-    """Compose functions right to left.
-
-    compose(f, g, h)(x) -> f(g(h(x)))
-
-    Args:
-        f, *fs: The head and rest of a sequence of callables. The
-                rightmost function passed can accept any arguments and
-                the returned function will have the same signature as
-                this last provided function.  All preceding functions
-                must be unary.
-
-    Returns:
-        The composition of the argument functions. The returned
-        function will accept the same arguments as the rightmost
-        passed in function.
-    """
-    rfs = list(chain([f], fs))
-    rfs.reverse()
-
-    def composed(*args, **kwargs):
-        return reduce(
-            lambda result, fn: fn(result),
-            rfs[1:],
-            rfs[0](*args, **kwargs))
-
-    return composed
-
-
-def identity(x):
-    return x
-
-
-def true(*args, **kwargs):
-    return True
-
-
-def false(*args, **kwargs):
-    return False
+from transducers._util import UNSET
+from transducers.functional import identity, true
 
 
 # Example reducers
@@ -58,9 +18,6 @@ def appender(result, item):
 
 
 # Transducer infrastructure
-
-_UNSET = object()
-
 
 class Reduced:
     """A sentinel 'box' used to return the final value of a reduction."""
@@ -151,7 +108,7 @@ def filtering(predicate):
     return FilteringTransducer
 
 
-def reducing(reducer, init=_UNSET):
+def reducing(reducer, init=UNSET):
     """Create a reducing transducer with the given reducer"""
 
     accumulator = init
@@ -160,7 +117,7 @@ def reducing(reducer, init=_UNSET):
 
         def step(self, result, item):
             nonlocal accumulator
-            accumulator = item if accumulator is _UNSET else reducer(accumulator, item)
+            accumulator = item if accumulator is UNSET else reducer(accumulator, item)
             return result
 
         def terminate(self, result):
@@ -168,7 +125,8 @@ def reducing(reducer, init=_UNSET):
 
     return ReducingTransducer
 
-def scanning(reducer, init=_UNSET):
+
+def scanning(reducer, init=UNSET):
     """Create a scanning reducer."""
 
     accumulator = init
@@ -177,10 +135,11 @@ def scanning(reducer, init=_UNSET):
 
         def step(self, result, item):
             nonlocal accumulator
-            accumulator = item if accumulator is _UNSET else reducer(accumulator, item)
+            accumulator = item if accumulator is UNSET else reducer(accumulator, item)
             return self._reducer(result, accumulator)
 
     return ScanningTransducer
+
 
 def enumerating(start=0):
     """Create a transducer which enumerates items."""
@@ -256,13 +215,13 @@ def distinct():
 
 def pairwise():
     """Create a transducer which produces successive pairs"""
-    previous_item = _UNSET
+    previous_item = UNSET
 
     class PairwiseTransducer(Transducer):
 
         def step(self, result, item):
             nonlocal previous_item
-            if previous_item is _UNSET:
+            if previous_item is UNSET:
                 previous_item = item
                 return result
             pair = (previous_item, item)
@@ -273,7 +232,7 @@ def pairwise():
 
 
 def batching(size):
-    """Create a transducer which produced non-overlapping batches."""
+    """Create a transducer which produces non-overlapping batches."""
 
     if size < 1:
         raise ValueError("batching() size must be at least 1")
@@ -297,13 +256,13 @@ def batching(size):
     return BatchingTransducer
 
 
-def windowing(size, padding=_UNSET):
+def windowing(size, padding=UNSET):
     """Create a transducer which produces a moving window over items."""
 
     if size < 1:
         raise ValueError("windowing() size must be at least 1")
 
-    window = deque(maxlen=size) if padding is _UNSET else deque([padding] * size, maxlen=size)
+    window = deque(maxlen=size) if padding is UNSET else deque([padding] * size, maxlen=size)
 
     class WindowingTransducer(Transducer):
 
