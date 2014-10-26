@@ -1,9 +1,21 @@
 Changes
 =======
 
+transducer 0.6
+--------------
+
+Correctness fixes by moving function locals in the transducer factories
+to be class attributes of the transducers.  This allows transducers
+returned by the transducer factories to be safely used more than once.
+
+Renamed transducer.transducer to transducer.transducers.
+
+Relocate reducing functions to reducers.py
+
+Move transducer infrastructure to infrastructure.py
+
+
 transducer 0.5
 --------------
 
 Initial release
-
-

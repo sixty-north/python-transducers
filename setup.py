@@ -2,7 +2,7 @@
 
 from distutils.core import setup
 
-version = 0.5
+version = 0.6
 
 with open('README.rst', 'r') as readme:
     long_description = readme.read()
