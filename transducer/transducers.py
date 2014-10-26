@@ -1,6 +1,6 @@
-"""Transducers in Python
+"""Functions for creating transducers.
 
-http://blog.cognitect.com/blog/2014/8/6/transducers-are-coming
+The functions in this module return transducers.
 """
 from collections import deque
 from functools import reduce
@@ -37,17 +37,16 @@ def filtering(predicate):
 def reducing(reducer, init=UNSET):
     """Create a reducing transducer with the given reducer"""
 
-    accumulator = init
-
     class ReducingTransducer(Transducer):
 
+        accumulator = init
+
         def step(self, result, item):
-            nonlocal accumulator
-            accumulator = item if accumulator is UNSET else reducer(accumulator, item)
+            ReducingTransducer.accumulator = item if ReducingTransducer.accumulator is UNSET else reducer(ReducingTransducer.accumulator, item)
             return result
 
         def terminate(self, result):
-            return accumulator
+            return ReducingTransducer.accumulator
 
     return ReducingTransducer
 
@@ -55,14 +54,13 @@ def reducing(reducer, init=UNSET):
 def scanning(reducer, init=UNSET):
     """Create a scanning reducer."""
 
-    accumulator = init
-
     class ScanningTransducer(Transducer):
 
+        accumulator = init
+
         def step(self, result, item):
-            nonlocal accumulator
-            accumulator = item if accumulator is UNSET else reducer(accumulator, item)
-            return self._reducer(result, accumulator)
+            ScanningTransducer.accumulator = item if ScanningTransducer.accumulator is UNSET else reducer(ScanningTransducer.accumulator, item)
+            return self._reducer(result, ScanningTransducer.accumulator)
 
     return ScanningTransducer
 
@@ -70,14 +68,13 @@ def scanning(reducer, init=UNSET):
 def enumerating(start=0):
     """Create a transducer which enumerates items."""
 
-    counter = start
-
     class EnumeratingTransducer(Transducer):
 
+        counter = start
+
         def step(self, result, item):
-            nonlocal counter
-            index = counter
-            counter += 1
+            index = EnumeratingTransducer.counter
+            EnumeratingTransducer.counter += 1
             return self._reducer(result, (index, item))
 
     return EnumeratingTransducer
@@ -96,14 +93,14 @@ def mapcatting(transform):
 
 def taking(n):
     """Create a transducer which takes the first n items"""
-    counter = 0
 
     class TakingTransducer(Transducer):
 
+        counter = 0
+
         def step(self, result, item):
-            nonlocal counter
-            if counter < n:
-                counter += 1
+            if TakingTransducer.counter < n:
+                TakingTransducer.counter += 1
                 return self._reducer(result, item)
             return result
 
@@ -112,27 +109,28 @@ def taking(n):
 
 def dropping_while(predicate):
     """Create a transducer which drops leading items while a predicate holds"""
-    dropping = True
 
     class DroppingWhileTransducer(Transducer):
 
+        dropping = True
+
         def step(self, result, item):
-            nonlocal dropping
-            dropping = dropping and predicate(item)
-            return result if dropping else self._reducer(result, item)
+            DroppingWhileTransducer.dropping = DroppingWhileTransducer.dropping and predicate(item)
+            return result if DroppingWhileTransducer.dropping else self._reducer(result, item)
 
     return DroppingWhileTransducer
 
 
 def distinct():
     """Create a transducer which filters distinct items"""
-    seen = set()
 
     class DistinctTransducer(Transducer):
 
+        seen = set()
+
         def step(self, result, item):
-            if item not in seen:
-                seen.add(item)
+            if item not in DistinctTransducer.seen:
+                DistinctTransducer.seen.add(item)
                 return self._reducer(result, item)
             return result
 
@@ -141,17 +139,17 @@ def distinct():
 
 def pairwise():
     """Create a transducer which produces successive pairs"""
-    previous_item = UNSET
 
     class PairwiseTransducer(Transducer):
 
+        previous_item = UNSET
+
         def step(self, result, item):
-            nonlocal previous_item
-            if previous_item is UNSET:
-                previous_item = item
+            if PairwiseTransducer.previous_item is UNSET:
+                PairwiseTransducer.previous_item = item
                 return result
-            pair = (previous_item, item)
-            previous_item = item
+            pair = (PairwiseTransducer.previous_item, item)
+            PairwiseTransducer.previous_item = item
             return self._reducer(result, pair)
 
     return PairwiseTransducer
@@ -163,21 +161,20 @@ def batching(size):
     if size < 1:
         raise ValueError("batching() size must be at least 1")
 
-    pending = []
-
     class BatchingTransducer(Transducer):
 
+        pending = []
+
         def step(self, result, item):
-            nonlocal pending
-            pending.append(item)
-            if len(pending) == size:
-                batch = pending
-                pending = []
+            BatchingTransducer.pending.append(item)
+            if len(BatchingTransducer.pending) == size:
+                batch = BatchingTransducer.pending
+                BatchingTransducer.pending = []
                 return self._reducer(result, batch)
             return result
 
         def terminate(self, result):
-            return self._reducer(result, pending)
+            return self._reducer(result, BatchingTransducer.pending)
 
     return BatchingTransducer
 
@@ -188,13 +185,13 @@ def windowing(size, padding=UNSET):
     if size < 1:
         raise ValueError("windowing() size must be at least 1")
 
-    window = deque(maxlen=size) if padding is UNSET else deque([padding] * size, maxlen=size)
-
     class WindowingTransducer(Transducer):
 
+        window = deque(maxlen=size) if padding is UNSET else deque([padding] * size, maxlen=size)
+
         def step(self, result, item):
-            window.append(item)
-            return self._reducer(result, list(window))
+            WindowingTransducer.window.append(item)
+            return self._reducer(result, list(WindowingTransducer.window))
 
         def terminate(self, result):
             for _ in range(size - 1):
@@ -221,34 +218,34 @@ def last(predicate=None):
     """Create a transducer which obtains the last item."""
 
     predicate = true if predicate is None else predicate
-    last_seen = None
 
     class LastTransducer(Transducer):
 
+        last_seen = None
+
         def step(self, result, item):
-            nonlocal last_seen
             if predicate(item):
-                last_seen = item
+                LastTransducer.last_seen = item
             return result
 
         def terminate(self, result):
-            return last_seen
+            return LastTransducer.last_seen
 
     return LastTransducer
 
 
 def reversing():
 
-    items = deque()
-
     class ReversingTransducer(Transducer):
 
+        items = deque()
+
         def step(self, result, item):
-            items.appendleft(item)
+            ReversingTransducer.items.appendleft(item)
             return result
 
         def terminate(self, result):
-            return items
+            return ReversingTransducer.items
 
     return ReversingTransducer
 
@@ -256,17 +253,18 @@ def reversing():
 def ordering(key=None, reverse=False):
 
     key = identity if key is None else key
-    items = []
 
     class OrderingTransducer(Transducer):
 
+        items = []
+
         def step(self, result, item):
-            items.append(item)
+            OrderingTransducer.items.append(item)
             return result
 
         def terminate(self, result):
-            items.sort(key=key, reverse=reverse)
-            return items
+            OrderingTransducer.items.sort(key=key, reverse=reverse)
+            return OrderingTransducer.items
 
     return OrderingTransducer
 
@@ -275,18 +273,17 @@ def counting(predicate=None):
 
     predicate = true if predicate is None else predicate
 
-    count = 0
-
     class CountingTransducer(Transducer):
 
+        count = 0
+
         def step(self, result, item):
-            nonlocal count
             if predicate(item):
-                count += 1
+                CountingTransducer.count += 1
             return result
 
         def terminate(self, result):
-            return count
+            return CountingTransducer.count
 
     return CountingTransducer
 
@@ -295,25 +292,18 @@ def grouping(key=None):
 
     key = identity if key is None else key
 
-    groups = {}
-
     class GroupingTransducer(Transducer):
+
+        groups = {}
 
         def step(self, result, item):
             k = key(item)
-            if k not in groups:
-                groups[k] = []
-            groups[k].append(item)
+            if k not in GroupingTransducer.groups:
+                GroupingTransducer.groups[k] = []
+            GroupingTransducer.groups[k].append(item)
             return result
 
         def terminate(self, result):
-            return groups
+            return GroupingTransducer.groups
 
     return GroupingTransducer
-
-
-
-
-
-
-
