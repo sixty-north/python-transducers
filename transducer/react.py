@@ -4,7 +4,7 @@ import sys
 from time import sleep
 
 from transducer._util import UNSET
-from transducer.transducer import Reduced
+from transducer.infrastructure import Reduced
 
 
 # Coroutine infrastructure
