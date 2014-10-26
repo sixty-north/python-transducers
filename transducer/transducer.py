@@ -6,16 +6,7 @@ from collections import deque
 from functools import reduce
 from transducer._util import UNSET
 from transducer.functional import identity, true
-
-
-# Example reducers
 from transducer.infrastructure import Reduced, Transducer
-
-
-def appender(result, item):
-    """A reducer for appending to a list"""
-    result.append(item)
-    return result
 
 
 # Functions for creating transducers, which are themselves

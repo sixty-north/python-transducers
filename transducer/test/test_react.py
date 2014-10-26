@@ -1,7 +1,8 @@
 from functools import partial
 import unittest
 from transducer.functional import compose
-from transducer.react import transduce, sender, iterable_source, IterableSink
+from transducer.react import transduce, iterable_source, IterableSink
+from transducer.reducers import sender
 from transducer.transducer import (mapping, filtering, taking, dropping_while, distinct)
 
 

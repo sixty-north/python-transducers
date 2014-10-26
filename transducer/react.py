@@ -87,19 +87,6 @@ def poisson_source(rate, event, target):
         target.send(event(duration))
 
 
-# Reducers
-
-def sender(result, item):
-    """A reducer for sending items to a coroutine.
-
-    Args:
-        result: A coroutine or sink.
-        item: An item to send.
-    """
-    result.send(item)
-    return result
-
-
 # A reactive reduce co-routine. We can build everything else in terms of reduce
 
 @coroutine

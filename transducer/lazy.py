@@ -1,6 +1,6 @@
 from collections import deque
 from transducer.infrastructure import Reduced
-from transducer.transducer import appender
+from transducer.reducers import appender
 
 
 # Transducible processes
