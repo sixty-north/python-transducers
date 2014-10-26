@@ -3,7 +3,7 @@ import unittest
 from transducer.eager import transduce
 from transducer.functional import compose
 from transducer.reducers import appender
-from transducer.transducer import (mapping, filtering, reducing, enumerating, first, last,
+from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
                                    reversing, ordering, counting, scanning, taking, dropping_while, distinct)
 
 

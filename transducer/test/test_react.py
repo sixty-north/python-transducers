@@ -3,7 +3,7 @@ import unittest
 from transducer.functional import compose
 from transducer.react import transduce, iterable_source, IterableSink
 from transducer.reducers import sender
-from transducer.transducer import (mapping, filtering, taking, dropping_while, distinct)
+from transducer.transducers import (mapping, filtering, taking, dropping_while, distinct)
 
 
 class TestComposedTransducers(unittest.TestCase):
