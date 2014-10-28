@@ -1,3 +1,4 @@
+from collections import deque
 import operator
 import unittest
 from transducer.eager import transduce
@@ -100,12 +101,28 @@ class TestSingleTransducers(unittest.TestCase):
                            init=[])
         self.assertSequenceEqual(result, [10, 8, 6, 4, 2])
 
+    def test_reversing_preserves_mutable_sequence_type(self):
+        result = transduce(transducer=reversing(),
+                           reducer=appender,
+                           iterable=[2, 4, 6, 8, 10],
+                           init=[])
+        self.assertIsInstance(result, list)
+        self.assertSequenceEqual(result, [10, 8, 6, 4, 2])
+
     def test_ordering(self):
         result = transduce(transducer=ordering(),
                            reducer=appender,
                            iterable=[4, 2, 6, 10, 8],
                            init=[])
         self.assertSequenceEqual(result, [2, 4, 6, 8, 10])
+
+    def test_ordering_preserves_mutable_sequence_type(self):
+        result = transduce(transducer=ordering(),
+                           reducer=appender,
+                           iterable=[4, 2, 6, 10, 8],
+                           init=deque())
+        self.assertIsInstance(result, deque)
+        self.assertSequenceEqual(result, deque([2, 4, 6, 8, 10]))
 
     def test_ordering_reverse(self):
         result = transduce(transducer=ordering(reverse=True),

@@ -386,7 +386,9 @@ class Reversing(Reducer):
         return result
 
     def terminate(self, result):
-        return self._items
+        for item in self._items:
+            self._reducer(result, item)
+        return result
 
 
 def reversing():
