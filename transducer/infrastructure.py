@@ -14,8 +14,8 @@ class Reduced:
         return self._value
 
 
-class Transducer(metaclass=ABCMeta):
-    """An Abstract Base Class for Transducers.
+class Reducer(metaclass=ABCMeta):
+    """An Abstract Base Class for Reducers.
 
     At least the step() method must be overridden.
     """

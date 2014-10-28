@@ -6,153 +6,275 @@ from collections import deque
 from functools import reduce
 from transducer._util import UNSET
 from transducer.functional import identity, true
-from transducer.infrastructure import Reduced, Transducer
+from transducer.infrastructure import Reduced, Reducer
 
 
 # Functions for creating transducers, which are themselves
 # functions which transform one reducer to another
 
+# ---------------------------------------------------------------------
+
+class Mapping(Reducer):
+
+    def __init__(self, reducer, transform):
+        super().__init__(reducer)
+        self._transform = transform
+
+    def step(self, result, item):
+        return self._reducer(result, self._transform(item))
+
+
 def mapping(transform):
     """Create a mapping transducer with the given transform"""
 
-    class MappingTransducer(Transducer):
+    def mapping_transducer(reducer):
+        return Mapping(reducer, transform)
 
-        def step(self, result, item):
-            return self._reducer(result, transform(item))
+    return mapping_transducer
 
-    return MappingTransducer
+# ---------------------------------------------------------------------
+
+
+class Filtering(Reducer):
+
+    def __init__(self, reducer, predicate):
+        super().__init__(reducer)
+        self._predicate = predicate
+
+    def step(self, result, item):
+        return self._reducer(result, item) if self._predicate(item) else result
 
 
 def filtering(predicate):
     """Create a filtering transducer with the given predicate"""
 
-    class FilteringTransducer(Transducer):
+    def filtering_transducer(reducer):
+        return Filtering(reducer, predicate)
 
-        def step(self, result, item):
-            return self._reducer(result, item) if predicate(item) else result
+    return filtering_transducer
 
-    return FilteringTransducer
+# ---------------------------------------------------------------------
+
+
+class Reducing(Reducer):
+
+    def __init__(self, reducer, reducer2, init=UNSET):
+        super().__init__(reducer)
+        self._reducer2 = reducer2
+        self._accumulator = init  # TODO: Should we try to call reducer2.initial() here?
+
+    def step(self, result, item):
+        self._accumulator = item if self._accumulator is UNSET else self._reducer2(self._accumulator, item)
+        return result
+
+    def terminate(self, result):
+        return self._accumulator
 
 
 def reducing(reducer, init=UNSET):
     """Create a reducing transducer with the given reducer"""
 
-    class ReducingTransducer(Transducer):
+    reducer2 = reducer
 
-        accumulator = init
+    def reducing_transducer(reducer):
+        return Reducing(reducer, reducer2, init)
 
-        def step(self, result, item):
-            ReducingTransducer.accumulator = item if ReducingTransducer.accumulator is UNSET else reducer(ReducingTransducer.accumulator, item)
-            return result
+    return reducing_transducer
 
-        def terminate(self, result):
-            return ReducingTransducer.accumulator
+# ---------------------------------------------------------------------
 
-    return ReducingTransducer
+
+class Scanning(Reducer):
+
+    def __init__(self, reducer, reducer2, init=UNSET):
+        super().__init__(reducer)
+        self._reducer2 = reducer2
+        self._accumulator = init  # TODO: Should we try to call reducer2.initial() here?
+
+    def step(self, result, item):
+        self._accumulator = item if self._accumulator is UNSET else self._reducer2(self._accumulator, item)
+        return self._reducer(result, self._accumulator)
 
 
 def scanning(reducer, init=UNSET):
     """Create a scanning reducer."""
 
-    class ScanningTransducer(Transducer):
+    reducer2 = reducer
 
-        accumulator = init
+    def scanning_transducer(reducer):
+        return Scanning(reducer, reducer2, init)
 
-        def step(self, result, item):
-            ScanningTransducer.accumulator = item if ScanningTransducer.accumulator is UNSET else reducer(ScanningTransducer.accumulator, item)
-            return self._reducer(result, ScanningTransducer.accumulator)
+    return scanning_transducer
 
-    return ScanningTransducer
+# ---------------------------------------------------------------------
+
+
+class Enumerating(Reducer):
+
+    def __init__(self, reducer, start):
+        super().__init__(reducer)
+        self._counter = start
+
+    def step(self, result, item):
+        index = self._counter
+        self._counter += 1
+        return self._reducer(result, (index, item))
 
 
 def enumerating(start=0):
     """Create a transducer which enumerates items."""
 
-    class EnumeratingTransducer(Transducer):
+    def enumerating_transducer(reducer):
+        return Enumerating(reducer, start)
 
-        counter = start
+    return enumerating_transducer
 
-        def step(self, result, item):
-            index = EnumeratingTransducer.counter
-            EnumeratingTransducer.counter += 1
-            return self._reducer(result, (index, item))
+# ---------------------------------------------------------------------
 
-    return EnumeratingTransducer
+
+class Mapcatting(Reducer):
+
+    def __init__(self, reducer, transform):
+        super().__init__(reducer)
+        self._transform = transform
+
+    def step(self, result, item):
+        return reduce(self._reducer, result, self._transform(item))
 
 
 def mapcatting(transform):
     """Create a transducer which transforms items and concatenates the results"""
 
-    class MapcattingTransducer(Transducer):
+    def mapcatting_transducer(reducer):
+        return Mapcatting(reducer, transform)
 
-        def step(self, result, item):
-            return reduce(self._reducer, result, transform(item))
+    return mapcatting_transducer
 
-    return MapcattingTransducer
+# ---------------------------------------------------------------------
+
+
+class Taking(Reducer):
+
+    def __init__(self, reducer, n):
+        super().__init__(reducer)
+        self._counter = 0
+        self._n = n
+
+    def step(self, result, item):
+        if self._counter < self._n:
+            self._counter += 1
+            return self._reducer(result, item)
+        return result
 
 
 def taking(n):
     """Create a transducer which takes the first n items"""
 
-    class TakingTransducer(Transducer):
+    def taking_transducer(reducer):
+        return Taking(reducer, n)
 
-        counter = 0
+    return taking_transducer
 
-        def step(self, result, item):
-            if TakingTransducer.counter < n:
-                TakingTransducer.counter += 1
-                return self._reducer(result, item)
-            return result
+# ---------------------------------------------------------------------
 
-    return TakingTransducer
+
+class DroppingWhile(Reducer):
+
+    def __init__(self, reducer, predicate):
+        super().__init__(reducer)
+        self._predicate = predicate
+        self._dropping = True
+
+    def step(self, result, item):
+        self._dropping = self._dropping and self._predicate(item)
+        return result if self._dropping else self._reducer(result, item)
 
 
 def dropping_while(predicate):
     """Create a transducer which drops leading items while a predicate holds"""
 
-    class DroppingWhileTransducer(Transducer):
+    def dropping_while_transducer(reducer):
+        return DroppingWhile(reducer, predicate)
 
-        dropping = True
+    return dropping_while_transducer
 
-        def step(self, result, item):
-            DroppingWhileTransducer.dropping = DroppingWhileTransducer.dropping and predicate(item)
-            return result if DroppingWhileTransducer.dropping else self._reducer(result, item)
+# ---------------------------------------------------------------------
 
-    return DroppingWhileTransducer
+
+class Distinct(Reducer):
+
+    def __init__(self, reducer):
+        super().__init__(reducer)
+        self._seen = set()
+
+    def step(self, result, item):
+        if item not in self._seen:
+            self._seen.add(item)
+            return self._reducer(result, item)
+        return result
 
 
 def distinct():
     """Create a transducer which filters distinct items"""
 
-    class DistinctTransducer(Transducer):
+    # TODO: The distinct_transducer function below isn't really necessary
+    #       since it's the identity function, although distinct() should
+    #       probably support a key argument so it can be used to choose
+    #       items which are distinct based on some property
 
-        seen = set()
+    def distinct_transducer(reducer):
+        return Distinct(reducer)
 
-        def step(self, result, item):
-            if item not in DistinctTransducer.seen:
-                DistinctTransducer.seen.add(item)
-                return self._reducer(result, item)
+    return distinct_transducer
+
+# ---------------------------------------------------------------------
+
+
+class Pairwise(Reducer):
+
+    def __init__(self, reducer):
+        super().__init__(reducer)
+        self._previous_item = UNSET
+
+    def step(self, result, item):
+        if self._previous_item is UNSET:
+            self._previous_item = item
             return result
+        pair = (self._previous_item, item)
+        self._previous_item = item
+        return self._reducer(result, pair)
 
-    return DistinctTransducer
+    # TODO: Should probably have a terminate here to return any pending values
 
 
 def pairwise():
     """Create a transducer which produces successive pairs"""
 
-    class PairwiseTransducer(Transducer):
+    def pairwise_transducer(reducer):
+        return Pairwise(reducer)
 
-        previous_item = UNSET
+    return pairwise_transducer
 
-        def step(self, result, item):
-            if PairwiseTransducer.previous_item is UNSET:
-                PairwiseTransducer.previous_item = item
-                return result
-            pair = (PairwiseTransducer.previous_item, item)
-            PairwiseTransducer.previous_item = item
-            return self._reducer(result, pair)
+# ---------------------------------------------------------------------
 
-    return PairwiseTransducer
+
+class Batching(Reducer):
+
+    def __init__(self, reducer, size):
+        super().__init__(reducer)
+        self._size = size
+        self._pending = []
+
+    def step(self, result, item):
+        self._pending.append(item)
+        if len(self._pending) == self._size:
+            batch = self._pending
+            Batching.pending = []
+            return self._reducer(result, batch)
+        return result
+
+    def terminate(self, result):
+        return self._reducer(result, self._pending)
 
 
 def batching(size):
@@ -161,22 +283,30 @@ def batching(size):
     if size < 1:
         raise ValueError("batching() size must be at least 1")
 
-    class BatchingTransducer(Transducer):
+    def batching_transducer(reducer):
+        return Batching(reducer, size)
 
-        pending = []
+    return batching_transducer
 
-        def step(self, result, item):
-            BatchingTransducer.pending.append(item)
-            if len(BatchingTransducer.pending) == size:
-                batch = BatchingTransducer.pending
-                BatchingTransducer.pending = []
-                return self._reducer(result, batch)
-            return result
+# ---------------------------------------------------------------------
 
-        def terminate(self, result):
-            return self._reducer(result, BatchingTransducer.pending)
 
-    return BatchingTransducer
+class Windowing(Reducer):
+
+    def __init__(self, reducer, size, padding):
+        super().__init__(reducer)
+        self._size = size
+        self._padding = padding
+        self._window = deque(maxlen=size) if padding is UNSET else deque([padding] * size, maxlen=size)
+
+    def step(self, result, item):
+        self._window.append(item)
+        return self._reducer(result, list(self._window))
+
+    def terminate(self, result):
+        for _ in range(self._size - 1):
+            result = self.step(result, self._padding)
+        return result
 
 
 def windowing(size, padding=UNSET):
@@ -185,20 +315,22 @@ def windowing(size, padding=UNSET):
     if size < 1:
         raise ValueError("windowing() size must be at least 1")
 
-    class WindowingTransducer(Transducer):
+    def windowing_transducer(reducer):
+        return Windowing(reducer, size, padding)
 
-        window = deque(maxlen=size) if padding is UNSET else deque([padding] * size, maxlen=size)
+    return windowing_transducer
 
-        def step(self, result, item):
-            WindowingTransducer.window.append(item)
-            return self._reducer(result, list(WindowingTransducer.window))
+# ---------------------------------------------------------------------
 
-        def terminate(self, result):
-            for _ in range(size - 1):
-                result = self.step(result, padding)
-            return result
 
-    return WindowingTransducer
+class First(Reducer):
+
+    def __init__(self, reducer, predicate):
+        super().__init__(reducer)
+        self._predicate = predicate
+
+    def step(self, result, item):
+        return Reduced(item) if self._predicate(item) else result
 
 
 def first(predicate=None):
@@ -206,12 +338,28 @@ def first(predicate=None):
 
     predicate = true if predicate is None else predicate
 
-    class FirstTransducer(Transducer):
+    def first_transducer(reducer):
+        return First(reducer, predicate)
 
-        def step(self, result, item):
-            return Reduced(item) if predicate(item) else result
+    return first_transducer
 
-    return FirstTransducer
+# ---------------------------------------------------------------------
+
+
+class Last(Reducer):
+
+    def __init__(self, reducer, predicate):
+        super().__init__(reducer)
+        self._predicate = predicate
+        self._last_seen = None
+
+    def step(self, result, item):
+        if self._predicate(item):
+            self._last_seen = item
+        return result
+
+    def terminate(self, result):
+        return self._last_seen
 
 
 def last(predicate=None):
@@ -219,91 +367,117 @@ def last(predicate=None):
 
     predicate = true if predicate is None else predicate
 
-    class LastTransducer(Transducer):
+    def last_transducer(reducer):
+        return Last(reducer, predicate)
 
-        last_seen = None
+    return last_transducer
 
-        def step(self, result, item):
-            if predicate(item):
-                LastTransducer.last_seen = item
-            return result
+# ---------------------------------------------------------------------
 
-        def terminate(self, result):
-            return LastTransducer.last_seen
 
-    return LastTransducer
+class Reversing(Reducer):
+
+    def __init__(self, reducer):
+        super().__init__(reducer)
+        self._items = deque()
+
+    def step(self, result, item):
+        self._items.appendleft(item)
+        return result
+
+    def terminate(self, result):
+        return self._items
 
 
 def reversing():
 
-    class ReversingTransducer(Transducer):
+    def reversing_transducer(reducer):
+        return Reversing(reducer)
 
-        items = deque()
+    return reversing_transducer
 
-        def step(self, result, item):
-            ReversingTransducer.items.appendleft(item)
-            return result
+# ---------------------------------------------------------------------
 
-        def terminate(self, result):
-            return ReversingTransducer.items
 
-    return ReversingTransducer
+class Ordering(Reducer):
+
+    def __init__(self, reducer, key, reverse):
+        super().__init__(reducer)
+        self._key = key
+        self._reverse = reverse
+        self._items = []
+
+    def step(self, result, item):
+        self._items.append(item)
+        return result
+
+    def terminate(self, result):
+        self._items.sort(key=self._key, reverse=self._reverse)
+        return self._items
 
 
 def ordering(key=None, reverse=False):
 
-    key = identity if key is None else key
+    def ordering_transducer(reducer):
+        return Ordering(reducer, key, reverse)
 
-    class OrderingTransducer(Transducer):
+    return ordering_transducer
 
-        items = []
+# ---------------------------------------------------------------------
 
-        def step(self, result, item):
-            OrderingTransducer.items.append(item)
-            return result
 
-        def terminate(self, result):
-            OrderingTransducer.items.sort(key=key, reverse=reverse)
-            return OrderingTransducer.items
+class Counting(Reducer):
 
-    return OrderingTransducer
+    def __init__(self, reducer, predicate):
+        super().__init__(reducer)
+        self._predicate = predicate
+        self._count = 0
+
+    def step(self, result, item):
+        if self._predicate(item):
+            self._count += 1
+        return result
+
+    def terminate(self, result):
+        return self._count
 
 
 def counting(predicate=None):
 
     predicate = true if predicate is None else predicate
 
-    class CountingTransducer(Transducer):
+    def counting_transducer(reducer):
+        return Counting(reducer, predicate)
 
-        count = 0
+    return counting_transducer
 
-        def step(self, result, item):
-            if predicate(item):
-                CountingTransducer.count += 1
-            return result
+# ---------------------------------------------------------------------
 
-        def terminate(self, result):
-            return CountingTransducer.count
 
-    return CountingTransducer
+class Grouping(Reducer):
 
+    def __init__(self, reducer, key):
+        super().__init__(reducer)
+        self._key = key
+        self._groups = {}
+
+    def step(self, result, item):
+        k = self._key(item)
+        if k not in self._groups:
+            self._groups[k] = []
+        self._groups[k].append(item)
+        return result
+
+    def terminate(self, result):
+        return self._groups
 
 def grouping(key=None):
 
     key = identity if key is None else key
 
-    class GroupingTransducer(Transducer):
+    def grouping_transducer(reducer):
+        return Grouping(reducer, key)
 
-        groups = {}
+    return grouping_transducer
 
-        def step(self, result, item):
-            k = key(item)
-            if k not in GroupingTransducer.groups:
-                GroupingTransducer.groups[k] = []
-            GroupingTransducer.groups[k].append(item)
-            return result
-
-        def terminate(self, result):
-            return GroupingTransducer.groups
-
-    return GroupingTransducer
+# ---------------------------------------------------------------------
