@@ -413,7 +413,11 @@ class Ordering(Reducer):
 
     def terminate(self, result):
         self._items.sort(key=self._key, reverse=self._reverse)
-        return self._items
+
+        for item in self._items:
+            self._reducer(result, item)
+
+        return result
 
 
 def ordering(key=None, reverse=False):
