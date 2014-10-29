@@ -5,8 +5,10 @@ from transducer.infrastructure import Reduced
 # Transducible processes
 
 def transduce(transducer, reducer, iterable, init=UNSET):
+    if init is UNSET:
+        return transduce(transducer, reducer, iterable, init=reducer.initial())
     r = transducer(reducer)
-    accumulator = r.inital() if init is UNSET else init
+    accumulator = init
     for item in iterable:
         accumulator = r.step(accumulator, item)
         if isinstance(accumulator, Reduced):

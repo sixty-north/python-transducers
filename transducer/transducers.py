@@ -330,7 +330,7 @@ class First(Reducer):
         self._predicate = predicate
 
     def step(self, result, item):
-        return Reduced(item) if self._predicate(item) else result
+        return Reduced(self._reducer(result, item)) if self._predicate(item) else result
 
 
 def first(predicate=None):
@@ -359,7 +359,7 @@ class Last(Reducer):
         return result
 
     def terminate(self, result):
-        return self._last_seen
+        return self._reducer(result, self._last_seen)
 
 
 def last(predicate=None):
@@ -387,7 +387,7 @@ class Reversing(Reducer):
 
     def terminate(self, result):
         for item in self._items:
-            self._reducer(result, item)
+            result = self._reducer(result, item)
         return result
 
 
@@ -417,8 +417,7 @@ class Ordering(Reducer):
         self._items.sort(key=self._key, reverse=self._reverse)
 
         for item in self._items:
-            self._reducer(result, item)
-
+            result = self._reducer(result, item)
         return result
 
 
@@ -445,7 +444,7 @@ class Counting(Reducer):
         return result
 
     def terminate(self, result):
-        return self._count
+        return self._reducer(result, self._count)
 
 
 def counting(predicate=None):
@@ -475,7 +474,9 @@ class Grouping(Reducer):
         return result
 
     def terminate(self, result):
-        return self._groups
+        for group in self._groups.items():
+            result = self._reducer(result, group)
+        return result
 
 def grouping(key=None):
 

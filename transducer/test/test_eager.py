@@ -71,28 +71,28 @@ class TestSingleTransducers(unittest.TestCase):
                            reducer=appender,
                            iterable=[2, 4, 6, 8, 10],
                            init=[])
-        self.assertEqual(result, 2)
+        self.assertEqual(result, [2])
 
     def test_first_with_predicate(self):
         result = transduce(transducer=first(lambda x: x > 5),
                            reducer=appender,
                            iterable=[2, 4, 6, 8, 10],
                            init=[])
-        self.assertEqual(result, 6)
+        self.assertEqual(result, [6])
 
     def test_last(self):
         result = transduce(transducer=last(),
                            reducer=appender,
                            iterable=[2, 4, 6, 8, 10],
                            init=[])
-        self.assertEqual(result, 10)
+        self.assertEqual(result, [10])
 
     def test_last_with_predicate(self):
         result = transduce(transducer=last(lambda x: x < 7),
                            reducer=appender,
                            iterable=[2, 4, 6, 8, 10],
                            init=[])
-        self.assertEqual(result, 6)
+        self.assertEqual(result, [6])
 
     def test_reversing(self):
         result = transduce(transducer=reversing(),
@@ -150,14 +150,14 @@ class TestSingleTransducers(unittest.TestCase):
                            reducer=appender,
                            iterable="The quick brown fox jumped".split(),
                            init=[])
-        self.assertEqual(result, 5)
+        self.assertEqual(result, [5])
 
     def test_counting_with_predicate(self):
         result = transduce(transducer=counting(lambda w: 'o' in w),
                            reducer=appender,
                            iterable="The quick brown fox jumped".split(),
                            init=[])
-        self.assertEqual(result, 2)
+        self.assertEqual(result, [2])
 
 
 class TestComposedTransducers(unittest.TestCase):

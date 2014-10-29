@@ -1,6 +1,6 @@
 """Infrastructure for implementing transducers."""
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
 
 class Reduced:
@@ -16,8 +16,6 @@ class Reduced:
 
 class Reducer(metaclass=ABCMeta):
     """An Abstract Base Class for Reducers.
-
-    At least the step() method must be overridden.
     """
 
     def __init__(self, reducer):
@@ -30,7 +28,6 @@ class Reducer(metaclass=ABCMeta):
     def initial(self):
         return self._reducer.initial()
 
-    @abstractmethod
     def step(self, result, item):
         """Reduce one item.
 
@@ -47,7 +44,7 @@ class Reducer(metaclass=ABCMeta):
             item to produce a new result.  If reduction needs to be terminated,
             this method should return the sentinel Reduced(result).
         """
-        raise NotImplementedError
+        return self._reducer(result, item)
 
     def complete(self, result):
         """Called at exactly once when reduction is complete.
@@ -65,5 +62,24 @@ class Reducer(metaclass=ABCMeta):
     def terminate(self, result):
         """Optionally override to terminate the result."""
         return result
+
+
+def reducer(initial):
+    """A function decorator allowing easy specification of the initial value for reduction."""
+
+    class ReducerWrapper(Reducer):
+        """Convert simple reducer functions to support the reduction protocol."""
+
+        def __init__(self, rdcr):
+            super().__init__(rdcr)
+            # TODO: Something clever with names and docstrings
+
+        def initial(self):
+            return initial
+
+    return ReducerWrapper
+
+
+
 
 
