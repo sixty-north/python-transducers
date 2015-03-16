@@ -21,8 +21,14 @@ the Clojure programming language, and this package aims to bring
 the benefits of transducers to Python, whilst transforming some of
 the Clojurisms into more Pythonic solutions.
 
-This package, which is most definitely a work in progress and a
-vehicle for ongoing research into transducers in Python, implements
+An extended write-up of the development of Python transducers from
+scratch can be found in our series of articles
+`Understanding Transducers Through Python <http://sixty-north.com/blog/series/understanding-transducers-through-python>`_. The code developed over the course of these
+articles is substantially the same as in this ``transducer`` package,
+although the package uses some further abstractions and tools
+which are largely irrelevant to understanding how transducers work.
+
+This package, implements
 simple infrastructure for implementing transducers in Python, a
 selection of transducer implementations of common operations, and
 some 'transducible processes' which allow us to apply transducers
