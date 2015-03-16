@@ -40,7 +40,7 @@ class TestSingleTransducers(unittest.TestCase):
                            iterable=range(5))
         self.assertListEqual(result, [0, 1, 3, 6, 10])
 
-    def test_scanning_within_init(self):
+    def test_scanning_with_init(self):
         result = transduce(transducer=scanning(operator.add, 3),
                            reducer=appending(),
                            iterable=range(5))
