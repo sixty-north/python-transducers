@@ -6,7 +6,7 @@ from collections import deque
 from functools import reduce
 from transducer._util import UNSET
 from transducer.functional import identity, true
-from transducer.infrastructure import Reduced, Reducer, Transducer
+from transducer.infrastructure import Reduced, Transducer
 
 
 # Functions for creating transducers, which are themselves
@@ -163,10 +163,9 @@ class Taking(Transducer):
         self._n = n
 
     def step(self, result, item):
-        if self._counter < self._n:
-            self._counter += 1
-            return self._reducer(result, item)
-        return result
+        self._counter += 1
+        result = self._reducer(result, item)
+        return Reduced(result) if self._counter >= self._n else result
 
 
 def taking(n):

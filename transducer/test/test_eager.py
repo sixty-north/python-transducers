@@ -3,7 +3,7 @@ import operator
 import unittest
 from transducer.eager import transduce
 from transducer.functional import compose
-from transducer.reducers import appending, expecting_single, conjoining
+from transducer.reducers import appending, expecting_single, conjoining, adding
 from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
                                     reversing, ordering, counting, scanning, taking, dropping_while, distinct)
 
@@ -147,6 +147,20 @@ class TestSingleTransducers(unittest.TestCase):
                            reducer=expecting_single(),
                            iterable="The quick brown fox jumped".split())
         self.assertEqual(result, 2)
+
+    def test_mutable_inits(self):
+        """Tests that the same mutable init object isn't shared across invocations."""
+        result = transduce(transducer=mapping(lambda x: x), reducer=appending(), iterable=range(3))
+        self.assertListEqual(result, [0, 1, 2])
+        result = transduce(transducer=mapping(lambda x: x), reducer=appending(), iterable=range(3))
+        self.assertListEqual(result, [0, 1, 2])
+
+    def test_adding_reducer(self):
+        result = transduce(
+            transducer=mapping(lambda x: x * x),
+            reducer=adding(),
+            iterable=list(range(3)) * 2)
+        self.assertListEqual(list(result), [0, 1, 4])
 
 
 class TestComposedTransducers(unittest.TestCase):

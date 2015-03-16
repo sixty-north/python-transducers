@@ -32,6 +32,22 @@ def conjoining():
     return _conjoining
 
 
+class Adding(Reducer):
+
+    def initial(self):
+        return set()
+
+    def step(self, result, item):
+        result.add(item)
+        return result
+
+_adding = Adding()
+
+
+def adding():
+    return _adding
+
+
 class ExpectingSingle(Reducer):
 
     def __init__(self):
