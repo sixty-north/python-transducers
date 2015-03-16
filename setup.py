@@ -2,7 +2,7 @@
 
 from distutils.core import setup
 
-version = 0.6
+version = 0.7
 
 with open('README.rst', 'r') as readme:
     long_description = readme.read()
@@ -11,7 +11,7 @@ setup(
     name = "transducer",
     packages = ["transducer"],
     version = "{version}".format(version=version),
-    description = "Tranducers, similar to those in Clojure",
+    description = "Transducers, similar to those in Clojure",
     author = "Sixty North AS",
     author_email = "rob@sixty-north.com",
     url = "http://code.sixty-north.com/python-transducers",
@@ -20,7 +20,6 @@ setup(
     classifiers = [
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.2",
         "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Environment :: Other Environment",

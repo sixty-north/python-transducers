@@ -6,7 +6,7 @@ from collections import deque
 from functools import reduce
 from transducer._util import UNSET
 from transducer.functional import identity, true
-from transducer.infrastructure import Reduced, Reducer
+from transducer.infrastructure import Reduced, Reducer, Transducer
 
 
 # Functions for creating transducers, which are themselves
@@ -14,7 +14,7 @@ from transducer.infrastructure import Reduced, Reducer
 
 # ---------------------------------------------------------------------
 
-class Mapping(Reducer):
+class Mapping(Transducer):
 
     def __init__(self, reducer, transform):
         super().__init__(reducer)
@@ -35,7 +35,7 @@ def mapping(transform):
 # ---------------------------------------------------------------------
 
 
-class Filtering(Reducer):
+class Filtering(Transducer):
 
     def __init__(self, reducer, predicate):
         super().__init__(reducer)
@@ -53,10 +53,10 @@ def filtering(predicate):
 
     return filtering_transducer
 
+
 # ---------------------------------------------------------------------
 
-
-class Reducing(Reducer):
+class Reducing(Transducer):
 
     def __init__(self, reducer, reducer2, init=UNSET):
         super().__init__(reducer)
@@ -67,8 +67,9 @@ class Reducing(Reducer):
         self._accumulator = item if self._accumulator is UNSET else self._reducer2(self._accumulator, item)
         return result
 
-    def terminate(self, result):
-        return self._accumulator
+    def complete(self, result):
+        result = self._reducer.step(result, self._accumulator)
+        return self._reducer.complete(result)
 
 
 def reducing(reducer, init=UNSET):
@@ -84,7 +85,7 @@ def reducing(reducer, init=UNSET):
 # ---------------------------------------------------------------------
 
 
-class Scanning(Reducer):
+class Scanning(Transducer):
 
     def __init__(self, reducer, reducer2, init=UNSET):
         super().__init__(reducer)
@@ -93,7 +94,7 @@ class Scanning(Reducer):
 
     def step(self, result, item):
         self._accumulator = item if self._accumulator is UNSET else self._reducer2(self._accumulator, item)
-        return self._reducer(result, self._accumulator)
+        return self._reducer.step(result, self._accumulator)
 
 
 def scanning(reducer, init=UNSET):
@@ -106,10 +107,11 @@ def scanning(reducer, init=UNSET):
 
     return scanning_transducer
 
+
 # ---------------------------------------------------------------------
 
 
-class Enumerating(Reducer):
+class Enumerating(Transducer):
 
     def __init__(self, reducer, start):
         super().__init__(reducer)
@@ -132,7 +134,7 @@ def enumerating(start=0):
 # ---------------------------------------------------------------------
 
 
-class Mapcatting(Reducer):
+class Mapcatting(Transducer):
 
     def __init__(self, reducer, transform):
         super().__init__(reducer)
@@ -153,7 +155,7 @@ def mapcatting(transform):
 # ---------------------------------------------------------------------
 
 
-class Taking(Reducer):
+class Taking(Transducer):
 
     def __init__(self, reducer, n):
         super().__init__(reducer)
@@ -178,7 +180,7 @@ def taking(n):
 # ---------------------------------------------------------------------
 
 
-class DroppingWhile(Reducer):
+class DroppingWhile(Transducer):
 
     def __init__(self, reducer, predicate):
         super().__init__(reducer)
@@ -201,7 +203,7 @@ def dropping_while(predicate):
 # ---------------------------------------------------------------------
 
 
-class Distinct(Reducer):
+class Distinct(Transducer):
 
     def __init__(self, reducer):
         super().__init__(reducer)
@@ -230,7 +232,7 @@ def distinct():
 # ---------------------------------------------------------------------
 
 
-class Pairwise(Reducer):
+class Pairwise(Transducer):
 
     def __init__(self, reducer):
         super().__init__(reducer)
@@ -242,9 +244,13 @@ class Pairwise(Reducer):
             return result
         pair = (self._previous_item, item)
         self._previous_item = item
-        return self._reducer(result, pair)
+        return self._reducer.step(result, pair)
 
-    # TODO: Should probably have a terminate here to return any pending values
+    def complete(self, result):
+        if self._previous_item is UNSET:
+            single = (self._previous_item,)
+            result = self._reducer.step(result, single)
+        self._reducer.complete(result)
 
 
 def pairwise():
@@ -258,7 +264,7 @@ def pairwise():
 # ---------------------------------------------------------------------
 
 
-class Batching(Reducer):
+class Batching(Transducer):
 
     def __init__(self, reducer, size):
         super().__init__(reducer)
@@ -269,12 +275,13 @@ class Batching(Reducer):
         self._pending.append(item)
         if len(self._pending) == self._size:
             batch = self._pending
-            Batching.pending = []
+            self._pending = []
             return self._reducer(result, batch)
         return result
 
-    def terminate(self, result):
-        return self._reducer(result, self._pending)
+    def complete(self, result):
+        r = self._reducer.step(result, self._pending)
+        return self._reducer.complete(r)
 
 
 def batching(size):
@@ -291,7 +298,7 @@ def batching(size):
 # ---------------------------------------------------------------------
 
 
-class Windowing(Reducer):
+class Windowing(Transducer):
 
     def __init__(self, reducer, size, padding):
         super().__init__(reducer)
@@ -301,12 +308,12 @@ class Windowing(Reducer):
 
     def step(self, result, item):
         self._window.append(item)
-        return self._reducer(result, list(self._window))
+        return self._reducer.step(result, list(self._window))
 
-    def terminate(self, result):
+    def complete(self, result):
         for _ in range(self._size - 1):
             result = self.step(result, self._padding)
-        return result
+        self._reducer.complete(result)
 
 
 def windowing(size, padding=UNSET):
@@ -323,14 +330,14 @@ def windowing(size, padding=UNSET):
 # ---------------------------------------------------------------------
 
 
-class First(Reducer):
+class First(Transducer):
 
     def __init__(self, reducer, predicate):
         super().__init__(reducer)
         self._predicate = predicate
 
     def step(self, result, item):
-        return Reduced(self._reducer(result, item)) if self._predicate(item) else result
+        return Reduced(self._reducer.step(result, item)) if self._predicate(item) else result
 
 
 def first(predicate=None):
@@ -346,20 +353,22 @@ def first(predicate=None):
 # ---------------------------------------------------------------------
 
 
-class Last(Reducer):
+class Last(Transducer):
 
     def __init__(self, reducer, predicate):
         super().__init__(reducer)
         self._predicate = predicate
-        self._last_seen = None
+        self._last_seen = UNSET
 
     def step(self, result, item):
         if self._predicate(item):
             self._last_seen = item
         return result
 
-    def terminate(self, result):
-        return self._reducer(result, self._last_seen)
+    def complete(self, result):
+        if self._last_seen is not UNSET:
+            result = self._reducer.step(result, self._last_seen)
+        return self._reducer.complete(result)
 
 
 def last(predicate=None):
@@ -375,7 +384,32 @@ def last(predicate=None):
 # ---------------------------------------------------------------------
 
 
-class Reversing(Reducer):
+class Repeating:
+
+    def __init__(self, reducer, num_times):
+        self._reducer = reducer
+        self._num_times = num_times
+
+    def step(self, result, item):
+        for i in range(self._num_times):
+            result = self._reducer.step(result, item)
+        return result
+
+
+def repeating(num_times):
+
+    if num_times < 1:
+        raise ValueError("num_times must be at least 1")
+
+    def repeating_transducer(reducer):
+        return Repeating(reducer, num_times)
+
+    return repeating_transducer
+
+# ---------------------------------------------------------------------
+
+
+class Reversing(Transducer):
 
     def __init__(self, reducer):
         super().__init__(reducer)
@@ -385,10 +419,13 @@ class Reversing(Reducer):
         self._items.appendleft(item)
         return result
 
-    def terminate(self, result):
+    def complete(self, result):
         for item in self._items:
-            result = self._reducer(result, item)
-        return result
+            result = self._reducer.step(result, item)
+
+        self._items.clear()
+
+        return self._reducer.complete(result)
 
 
 def reversing():
@@ -401,7 +438,7 @@ def reversing():
 # ---------------------------------------------------------------------
 
 
-class Ordering(Reducer):
+class Ordering(Transducer):
 
     def __init__(self, reducer, key, reverse):
         super().__init__(reducer)
@@ -413,12 +450,15 @@ class Ordering(Reducer):
         self._items.append(item)
         return result
 
-    def terminate(self, result):
+    def complete(self, result):
         self._items.sort(key=self._key, reverse=self._reverse)
 
         for item in self._items:
-            result = self._reducer(result, item)
-        return result
+            result = self._reducer.step(result, item)
+
+        self._items.clear()
+
+        return self._reducer.complete(result)
 
 
 def ordering(key=None, reverse=False):
@@ -431,7 +471,7 @@ def ordering(key=None, reverse=False):
 # ---------------------------------------------------------------------
 
 
-class Counting(Reducer):
+class Counting(Transducer):
 
     def __init__(self, reducer, predicate):
         super().__init__(reducer)
@@ -443,8 +483,9 @@ class Counting(Reducer):
             self._count += 1
         return result
 
-    def terminate(self, result):
-        return self._reducer(result, self._count)
+    def complete(self, result):
+        result = self._reducer.step(result, self._count)
+        return self._reducer.complete(result)
 
 
 def counting(predicate=None):
@@ -459,7 +500,7 @@ def counting(predicate=None):
 # ---------------------------------------------------------------------
 
 
-class Grouping(Reducer):
+class Grouping(Transducer):
 
     def __init__(self, reducer, key):
         super().__init__(reducer)
@@ -473,10 +514,11 @@ class Grouping(Reducer):
         self._groups[k].append(item)
         return result
 
-    def terminate(self, result):
+    def complete(self, result):
         for group in self._groups.items():
-            result = self._reducer(result, group)
-        return result
+            result = self._reducer.step(result, group)
+        return self._reducer.complete(result)
+
 
 def grouping(key=None):
 

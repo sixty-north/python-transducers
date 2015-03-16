@@ -1,6 +1,17 @@
 Changes
 =======
 
+transducer 0.7
+--------------
+
+Simplified and clarified much of the implementation.
+
+Dropped support for Python 3.2.
+
+Much clearer reduction to single values for transducers such as first()
+and last() in conjunction with the expecting_single() reducer.
+
+
 transducer 0.6
 --------------
 

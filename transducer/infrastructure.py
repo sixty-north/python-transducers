@@ -1,6 +1,6 @@
 """Infrastructure for implementing transducers."""
 
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 
 
 class Reduced:
@@ -14,16 +14,30 @@ class Reduced:
         return self._value
 
 
-class Reducer(metaclass=ABCMeta):
-    """An Abstract Base Class for Reducers.
+class Reducer(object, metaclass=ABCMeta):
+
+    @abstractmethod
+    def initial(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def step(self, result, item):
+        raise NotImplementedError
+
+    def complete(self, result):
+        return result
+
+    def __call__(self, result, item):
+        """Reducing objects are callable so they can be used like functions."""
+        return self.step(result, item)
+
+
+class Transducer(Reducer):
+    """An Abstract Base Class for Transducers.
     """
 
     def __init__(self, reducer):
         self._reducer = reducer
-
-    def __call__(self, result, item):
-        """Transducers are callable, so they can be used as reducers."""
-        return self.step(result, item)
 
     def initial(self):
         return self._reducer.initial()
@@ -49,37 +63,15 @@ class Reducer(metaclass=ABCMeta):
     def complete(self, result):
         """Called at exactly once when reduction is complete.
 
-        Called on completion of a transducible process.
-        Consider overriding terminate() rather than this method for convenience.
+        Called on completion of a transducible process. The default implementation calls complete()
+        on the underlying reducer, which should be done to meet the requirements of the transducer
+        contract.  Overrides of this method are the right place to deal with any pending state or
+        perform with other clean-up actions.
+
+        Args:
+            result: The result prior to completion.
+
+        Returns:
+            The completed result.
         """
-        result = self.terminate(result)
-
-        try:
-            return self._reducer.complete(result)
-        except AttributeError:
-            return result
-
-    def terminate(self, result):
-        """Optionally override to terminate the result."""
-        return result
-
-
-def reducer(initial):
-    """A function decorator allowing easy specification of the initial value for reduction."""
-
-    class ReducerWrapper(Reducer):
-        """Convert simple reducer functions to support the reduction protocol."""
-
-        def __init__(self, rdcr):
-            super().__init__(rdcr)
-            # TODO: Something clever with names and docstrings
-
-        def initial(self):
-            return initial
-
-    return ReducerWrapper
-
-
-
-
-
+        return self._reducer.complete(result)

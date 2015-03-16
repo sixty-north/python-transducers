@@ -5,6 +5,7 @@ from time import sleep
 
 from transducer._util import UNSET
 from transducer.infrastructure import Reduced
+from transducer.reducers import sending
 
 
 # Coroutine infrastructure
@@ -62,14 +63,37 @@ class IterableSink:
         while len(self._items) > 0:
             yield self._items.popleft()
 
-# Sources
 
+class SingularSink:
+
+    def __init__(self):
+        self._item = UNSET
+
+    def send(self, item):
+        if self._item is not UNSET:
+            raise RuntimeError("SingularSink sent more than one item {!r}".format(item))
+        self._item = item
+
+    def close(self):
+        pass
+
+    def value(self):
+        return self._item
+
+
+# Sources
 
 def iterable_source(iterable, target):
     """Convert an iterable into a stream of events."""
+    result = None
     for item in iterable:
-        target.send(item)
+        try:
+            target.send(item)
+        except StopIteration as e:
+            result = e.value
+            break
     target.close()
+    return result
 
 
 def poisson_source(rate, event, target):
@@ -80,17 +104,23 @@ def poisson_source(rate, event, target):
         event: A function or type used to construct the item to send from a
             float duration.
         target: The target coroutine or sink.
+
+    Returns:
+        The completed value.
     """
     while True:
         duration = random.expovariate(rate)
         sleep(duration)
-        target.send(event(duration))
+        try:
+            target.send(event(duration))
+        except StopIteration as e:
+            return e.value
 
 
 # A reactive reduce co-routine. We can build everything else in terms of reduce
 
 @coroutine
-def rreduce(reducer, target, initializer=UNSET):
+def rreduce(reducer, target):
     """Reduce for coroutines.
 
     Args:
@@ -99,12 +129,11 @@ def rreduce(reducer, target, initializer=UNSET):
 
         target: The coroutine or sink to which results will be sent.
 
-        initializer: Optional initializer for reduction. If not provided, initial()
-            will be called on the reducer to obtain the initial value.
     """
-    accumulator = reducer.initial() if initializer is UNSET else initializer
+    accumulator = target
     try:
         while True:
+
             accumulator = reducer.step(accumulator, (yield))
             if isinstance(accumulator, Reduced):
                 accumulator = accumulator.value
@@ -112,12 +141,13 @@ def rreduce(reducer, target, initializer=UNSET):
     except GeneratorExit:
         pass
 
-    target.send(reducer.complete(accumulator))
+    result = reducer.complete(accumulator)
     target.close()
-    raise StopIteration
-
+    return result
 
 # Transducible processes
 
-def transduce(transducer, reducer, source, sink):
-    source(rreduce(transducer(reducer), target=sink, initializer=sink))
+
+def transduce(transducer, source, sink):
+    return source(rreduce(reducer=transducer(sending()),
+                          target=sink))

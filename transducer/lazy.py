@@ -1,15 +1,13 @@
 from collections import deque
 from transducer.infrastructure import Reduced
-from transducer.reducers import appender
+from transducer.reducers import appending
 
 
 # Transducible processes
 
 def transduce(transducer, iterable):
-    """Lazy application of a transducer to an iterable."""
-    r = transducer(appender)
-    pending = deque()
-    accumulator = pending
+    r = transducer(appending())
+    accumulator = deque()
     reduced = False
     for item in iterable:
         accumulator = r.step(accumulator, item)
@@ -17,15 +15,17 @@ def transduce(transducer, iterable):
             accumulator = accumulator.value
             reduced = True
 
-        while len(pending) > 0:
-            p = pending.popleft()
-            yield p
+        yield from pending_in(accumulator)
 
         if reduced:
             break
 
-    r.complete(accumulator)
+    completed_result = r.complete(accumulator)
+    assert completed_result is accumulator
 
-    while len(pending) > 0:
-        p = pending.popleft()
-        yield p
+    yield from pending_in(accumulator)
+
+
+def pending_in(queue):
+    while queue:
+        yield queue.popleft()
