@@ -6,7 +6,7 @@ from transducer.infrastructure import Reduced
 
 def transduce(transducer, reducer, iterable, init=UNSET):
     r = transducer(reducer)
-    accumulator = reducer.initial() if init is UNSET else init
+    accumulator = r.initial() if init is UNSET else init
     for item in iterable:
         accumulator = r.step(accumulator, item)
         if isinstance(accumulator, Reduced):
