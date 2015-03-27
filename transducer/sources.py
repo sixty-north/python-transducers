@@ -11,7 +11,6 @@ def iterable_source(iterable, target):
         except StopIteration as e:
             result = e.value
             break
-    target.close()
     return result
 
 
@@ -33,5 +32,4 @@ def poisson_source(rate, iterable, target):
             target.send(item)
         except StopIteration as e:
             return e.value
-    target.close()
     return None
