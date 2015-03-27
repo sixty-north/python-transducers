@@ -1,4 +1,5 @@
-from transducer.infrastructure import Reducer
+from transducer.infrastructure import Reducer, Reduced
+from transducer.sinks import null_sink
 
 
 class Appending(Reducer):
@@ -75,23 +76,19 @@ def expecting_single():
 
 class Sending(Reducer):
 
-    class NullSink:
-        """The /dev/null of coroutine sinks."""
-
-        def send(self, item):
-            pass
-
-        def close(self):
-            pass
-
     def initial(self):
-        return Sending.NullSink()
+        return null_sink()
 
     def step(self, result, item):
         try:
             result.send(item)
         except StopIteration:
-            pass  # TODO: What is the correct course of action here?
+            return Reduced(result)
+        else:
+            return result
+
+    def complete(self, result):
+        result.close()
         return result
 
 _sending = Sending()

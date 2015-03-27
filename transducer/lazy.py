@@ -1,6 +1,9 @@
 from collections import deque
+
+from transducer._util import pending_in
 from transducer.infrastructure import Reduced
 from transducer.reducers import appending
+
 
 
 # Transducible processes
@@ -24,8 +27,3 @@ def transduce(transducer, iterable):
     assert completed_result is accumulator
 
     yield from pending_in(accumulator)
-
-
-def pending_in(queue):
-    while queue:
-        yield queue.popleft()
