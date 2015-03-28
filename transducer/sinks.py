@@ -52,7 +52,6 @@ class CollectingSink:
             item = (yield)
             self._items.append(item)
 
-
     def __iter__(self):
         yield from pending_in(self._items)
 
