@@ -3,22 +3,25 @@ from time import sleep
 
 
 def iterable_source(iterable, target):
-    """Convert an iterable into a stream of events."""
-    result = None
+    """Convert an iterable into a stream of events.
+
+    Args:
+        iterable: A series of items which will be sent to the target one by one.
+        target: The target coroutine or sink.
+    """
     for item in iterable:
         try:
             target.send(item)
         except StopIteration as e:
-            result = e.value
-            break
-    return result
+            return e.value
+    return None
 
 
 def poisson_source(rate, iterable, target):
     """Send events at random times with uniform probability.
 
     Args:
-        rate: The average number of events to send per second
+        rate: The average number of events to send per second.
         iterable: A series of items which will be sent to the target one by one.
         target: The target coroutine or sink.
 
