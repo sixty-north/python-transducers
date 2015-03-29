@@ -182,6 +182,18 @@ class TestSingleTransducers(unittest.TestCase):
                            iterable=[1, 3, 5, 7, 9])
         self.assertEqual(result, 7)
 
+    def test_element_at_validation(self):
+        with self.assertRaises(IndexError):
+            transduce(transducer=element_at(-1),
+                               reducer=expecting_single(),
+                               iterable=[1, 3, 5, 7, 9])
+
+    def test_element_at_too_short(self):
+        with self.assertRaises(IndexError):
+            transduce(transducer=element_at(3),
+                      reducer=expecting_single(),
+                      iterable=[1, 3, 5])
+
     def test_first(self):
         result = transduce(transducer=first(),
                            reducer=expecting_single(),
