@@ -1,8 +1,25 @@
 # Transducer's setup.py
 
 from distutils.core import setup
+import io
+import os
+import re
 
-version = 0.7
+
+def read(*names, **kwargs):
+    with io.open(
+        os.path.join(os.path.dirname(__file__), *names),
+        encoding=kwargs.get("encoding", "utf8")
+    ) as fp:
+        return fp.read()
+
+def find_version(*file_paths):
+    version_file = read(*file_paths)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
 
 with open('README.rst', 'r') as readme:
     long_description = readme.read()
@@ -10,7 +27,7 @@ with open('README.rst', 'r') as readme:
 setup(
     name = "transducer",
     packages = ["transducer"],
-    version = "{version}".format(version=version),
+    version = find_version("transducer/__init__.py"),
     description = "Transducers, similar to those in Clojure",
     author = "Sixty North AS",
     author_email = "rob@sixty-north.com",
