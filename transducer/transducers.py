@@ -4,6 +4,7 @@ The functions in this module return transducers.
 """
 from collections import deque
 from functools import reduce
+import itertools
 from transducer._util import UNSET
 from transducer.functional import identity, true
 from transducer.infrastructure import Reduced, Transducer
@@ -348,9 +349,13 @@ class Windowing(Transducer):
         return self._reducer.step(result, list(self._window))
 
     def complete(self, result):
-        for _ in range(self._size - 1):
-            result = self.step(result, self._padding)
-        self._reducer.complete(result)
+        if self._padding is not UNSET:
+            for _ in range(self._size - 1):
+                result = self.step(result, self._padding)
+        else:
+            for i in range(1, self._size):
+                result = self._reducer.step(result, list(itertools.islice(self._window, i, self._size)))
+        return self._reducer.complete(result)
 
 
 def windowing(size, padding=UNSET):

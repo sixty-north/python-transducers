@@ -6,7 +6,7 @@ from transducer.functional import compose
 from transducer.reducers import appending, expecting_single, conjoining, adding
 from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
                                     reversing, ordering, counting, scanning, taking, dropping_while, distinct,
-                                    taking_while, dropping, element_at, mapcatting, pairwise, batching)
+                                    taking_while, dropping, element_at, mapcatting, pairwise, batching, windowing)
 
 
 class TestSingleTransducers(unittest.TestCase):
@@ -131,6 +131,50 @@ class TestSingleTransducers(unittest.TestCase):
                            reducer=appending(),
                            iterable=[42, 12, 45, 9, 18, 3, 34, 13])
         self.assertListEqual(result, [[42, 12, 45], [9, 18, 3], [34, 13]])
+
+    def test_batching_validation(self):
+        with self.assertRaises(ValueError):
+            transduce(transducer=batching(0),
+                      reducer=appending(),
+                      iterable=[42, 12, 45, 9, 18, 3, 34, 13])
+
+    def test_windowing_no_padding(self):
+        result = transduce(transducer=windowing(3),
+                           reducer=appending(),
+                           iterable=[42, 12, 45, 9, 18, 3, 34, 13])
+        self.assertListEqual(result,
+                             [[42],
+                              [42, 12],
+                              [42, 12, 45],
+                              [12, 45, 9],
+                              [45, 9, 18],
+                              [9, 18, 3],
+                              [18, 3, 34],
+                              [3, 34, 13],
+                              [34, 13],
+                              [13]])
+
+    def test_windowing_padding(self):
+        result = transduce(transducer=windowing(3, padding=0),
+                           reducer=appending(),
+                           iterable=[42, 12, 45, 9, 18, 3, 34, 13])
+        self.assertListEqual(result,
+                             [[0, 0, 42],
+                              [0, 42, 12],
+                              [42, 12, 45],
+                              [12, 45, 9],
+                              [45, 9, 18],
+                              [9, 18, 3],
+                              [18, 3, 34],
+                              [3, 34, 13],
+                              [34, 13, 0],
+                              [13, 0, 0]])
+
+    def test_windowing_validation(self):
+        with self.assertRaises(ValueError):
+            transduce(transducer=windowing(0),
+                      reducer=appending(),
+                      iterable=[42, 12, 45, 9, 18, 3, 34, 13])
 
     def test_element_at(self):
         result = transduce(transducer=element_at(3),
