@@ -11,6 +11,26 @@ Dropped support for Python 3.2.
 Much clearer reduction to single values for transducers such as first()
 and last() in conjunction with the expecting_single() reducer.
 
+transducer 0.8
+--------------
+
+Reorganised the code – particularly for the coroutine based event
+processing: sources, sinks and the react transduce now exist in their
+own modules.
+
+Clarified the semantics of the sources, which now no longer call
+close() on the targets.
+
+Single-sourced the version from the transducer/__init__.py file.
+
+Adds a new reducer for producing sets.
+
+
+transducer 0.7
+--------------
+
+Rework to make the code closer to the code in the blog series.
+
 
 transducer 0.6
 --------------

@@ -460,10 +460,10 @@ def element_at(index):
 # ---------------------------------------------------------------------
 
 
-class Repeating:
+class Repeating(Transducer):
 
     def __init__(self, reducer, num_times):
-        self._reducer = reducer
+        super().__init__(reducer)
         self._num_times = num_times
 
     def step(self, result, item):
@@ -474,8 +474,8 @@ class Repeating:
 
 def repeating(num_times):
 
-    if num_times < 1:
-        raise ValueError("num_times must be at least 1")
+    if num_times < 0:
+        raise ValueError("num_times value {} is not non-negative".format(num_times))
 
     def repeating_transducer(reducer):
         return Repeating(reducer, num_times)

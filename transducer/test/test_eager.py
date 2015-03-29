@@ -6,7 +6,8 @@ from transducer.functional import compose
 from transducer.reducers import appending, expecting_single, conjoining, adding
 from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
                                     reversing, ordering, counting, scanning, taking, dropping_while, distinct,
-                                    taking_while, dropping, element_at, mapcatting, pairwise, batching, windowing)
+                                    taking_while, dropping, element_at, mapcatting, pairwise, batching, windowing,
+                                    repeating)
 
 
 class TestSingleTransducers(unittest.TestCase):
@@ -194,6 +195,24 @@ class TestSingleTransducers(unittest.TestCase):
                       reducer=expecting_single(),
                       iterable=[1, 3, 5])
 
+    def test_repeating(self):
+        result = transduce(transducer=repeating(3),
+                           reducer=appending(),
+                           iterable=[1, 3, 5])
+        self.assertListEqual(result, [1, 1, 1, 3, 3, 3, 5, 5, 5])
+
+    def test_repeating_zero(self):
+        result = transduce(transducer=repeating(0),
+                           reducer=appending(),
+                           iterable=[1, 3, 5])
+        self.assertListEqual(result, [])
+
+    def test_repeating_validation(self):
+        with self.assertRaises(ValueError):
+            transduce(transducer=repeating(-1),
+                      reducer=appending(),
+                      iterable=[1, 3, 5])
+
     def test_first(self):
         result = transduce(transducer=first(),
                            reducer=expecting_single(),
@@ -230,8 +249,6 @@ class TestSingleTransducers(unittest.TestCase):
                            iterable=[2, 4, 6, 8, 10])
         self.assertIsInstance(result, list)
         self.assertSequenceEqual(result, [10, 8, 6, 4, 2])
-
-# TODO: Test batching, etc
 
     def test_ordering(self):
         result = transduce(transducer=ordering(),
