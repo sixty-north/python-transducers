@@ -18,7 +18,7 @@ of data, not just with iterable series.
 
 Transducers were developed by Rich Hickey, the driving force behind
 the Clojure programming language, and this package aims to bring
-the benefits of transducers to Python, whilst transforming some of
+the benefits of transducers to Python 3, whilst transforming some of
 the Clojurisms into more Pythonic solutions.
 
 An extended write-up of the development of Python transducers from
@@ -28,10 +28,9 @@ articles is substantially the same as in this ``transducer`` package,
 although the package uses some further abstractions and tools
 which are largely irrelevant to understanding how transducers work.
 
-This package, implements
-simple infrastructure for implementing transducers in Python, a
-selection of transducer implementations of common operations, and
-some 'transducible processes' which allow us to apply transducers
-to iterable series (both eagerly and lazily) and to use
-transducers to process 'push' events implemented as Python
+This package, implements simple infrastructure for implementing
+transducers in Python, a selection of transducer implementations of
+common operations, and some 'transducible processes' which allow us
+to apply transducers to iterable series (both eagerly and lazily) and
+to use transducers to process 'push' events implemented as Python
 coroutines.
