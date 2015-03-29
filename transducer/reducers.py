@@ -96,3 +96,30 @@ _sending = Sending()
 
 def sending():
     return _sending
+
+
+class Completing(Reducer):
+
+    def __init__(self, reducer, identity):
+        self._reducer = reducer
+        self._identity = identity
+
+    def initial(self):
+        return self._identity
+
+    def step(self, result, item):
+        return self._reducer(result, item)
+
+
+def completing(reducer, identity=None):
+    """Complete a regular reducing function to support the Reducer protocol.
+
+    Args:
+        reducer: A reducing function. e.g. lambda x, y: x+y
+        identity: The identity (i.e. seed) value for reducer. e.g. zero
+
+    Returns:
+        An instance of the Completing reducer.
+    """
+
+    return Completing(reducer, identity)
