@@ -202,6 +202,32 @@ def taking_while(predicate):
 
 # ---------------------------------------------------------------------
 
+
+class Dropping(Transducer):
+
+    def __init__(self, reducer, n):
+        super().__init__(reducer)
+        self._counter = 0
+        self._n = n
+
+    def step(self, result, item):
+        result = result if self._counter < self._n else self._reducer(result, item)
+        self._counter += 1
+        return result
+
+
+def dropping(n):
+    """Create a transducer which drops the first n items"""
+
+    if n < 0:
+        raise ValueError("Cannot drop fewer than zero ({}) items".format(n))
+
+    def dropping_transducer(reducer):
+        return Dropping(reducer, n)
+
+    return dropping_transducer
+
+
 class DroppingWhile(Transducer):
 
     def __init__(self, reducer, predicate):

@@ -6,7 +6,7 @@ from transducer.functional import compose
 from transducer.reducers import appending, expecting_single, conjoining, adding
 from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
                                     reversing, ordering, counting, scanning, taking, dropping_while, distinct,
-                                    taking_while)
+                                    taking_while, dropping)
 
 
 class TestSingleTransducers(unittest.TestCase):
@@ -70,6 +70,18 @@ class TestSingleTransducers(unittest.TestCase):
                            reducer=appending(),
                            iterable=[2, 4, 5, 8, 10])
         self.assertListEqual(result, [2, 4, 5])
+
+    def test_dropping(self):
+        result = transduce(transducer=dropping(3),
+                           reducer=appending(),
+                           iterable=[2, 4, 5, 8, 10])
+        self.assertListEqual(result, [8, 10])
+
+    def test_dropping_while(self):
+        result = transduce(transducer=dropping_while(lambda x: x < 6),
+                           reducer=appending(),
+                           iterable=[2, 4, 5, 8, 10])
+        self.assertListEqual(result, [8, 10])
 
     def test_first(self):
         result = transduce(transducer=first(),
