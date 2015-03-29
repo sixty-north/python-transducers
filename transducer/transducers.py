@@ -171,6 +171,9 @@ class Taking(Transducer):
 def taking(n):
     """Create a transducer which takes the first n items"""
 
+    if n < 0:
+        raise ValueError("Cannot take fewer than zero ({}) items".format(n))
+
     def taking_transducer(reducer):
         return Taking(reducer, n)
 
