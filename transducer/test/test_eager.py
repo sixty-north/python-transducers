@@ -5,7 +5,8 @@ from transducer.eager import transduce
 from transducer.functional import compose
 from transducer.reducers import appending, expecting_single, conjoining, adding
 from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
-                                    reversing, ordering, counting, scanning, taking, dropping_while, distinct)
+                                    reversing, ordering, counting, scanning, taking, dropping_while, distinct,
+                                    taking_while)
 
 
 class TestSingleTransducers(unittest.TestCase):
@@ -57,6 +58,18 @@ class TestSingleTransducers(unittest.TestCase):
                            reducer=appending(),
                            iterable=[2, 4, 6, 8, 10])
         self.assertListEqual(result, [(3, 2), (4, 4), (5, 6), (6, 8), (7, 10)])
+
+    def test_taking(self):
+        result = transduce(transducer=taking(3),
+                           reducer=appending(),
+                           iterable=[2, 4, 5, 8, 10])
+        self.assertListEqual(result, [2, 4, 5])
+
+    def test_taking_while(self):
+        result = transduce(transducer=taking_while(lambda x: x < 6),
+                           reducer=appending(),
+                           iterable=[2, 4, 5, 8, 10])
+        self.assertListEqual(result, [2, 4, 5])
 
     def test_first(self):
         result = transduce(transducer=first(),

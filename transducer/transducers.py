@@ -182,6 +182,26 @@ def taking(n):
 # ---------------------------------------------------------------------
 
 
+class TakingWhile(Transducer):
+
+    def __init__(self, reducer, predicate):
+        super().__init__(reducer)
+        self._predicate = predicate
+
+    def step(self, result, item):
+        return self._reducer(result, item) if self._predicate(item) else Reduced(result)
+
+
+def taking_while(predicate):
+    """Create a transducer which takes leading items while they satisfy a predicate."""
+
+    def taking_while_transducer(reducer):
+        return TakingWhile(reducer, predicate)
+
+    return taking_while_transducer
+
+# ---------------------------------------------------------------------
+
 class DroppingWhile(Transducer):
 
     def __init__(self, reducer, predicate):
@@ -195,7 +215,7 @@ class DroppingWhile(Transducer):
 
 
 def dropping_while(predicate):
-    """Create a transducer which drops leading items while a predicate holds"""
+    """Create a transducer which drops leading items while a predicate holds."""
 
     def dropping_while_transducer(reducer):
         return DroppingWhile(reducer, predicate)
