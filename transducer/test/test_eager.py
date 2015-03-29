@@ -6,7 +6,7 @@ from transducer.functional import compose
 from transducer.reducers import appending, expecting_single, conjoining, adding
 from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
                                     reversing, ordering, counting, scanning, taking, dropping_while, distinct,
-                                    taking_while, dropping, element_at)
+                                    taking_while, dropping, element_at, mapcatting)
 
 
 class TestSingleTransducers(unittest.TestCase):
@@ -58,6 +58,12 @@ class TestSingleTransducers(unittest.TestCase):
                            reducer=appending(),
                            iterable=[2, 4, 6, 8, 10])
         self.assertListEqual(result, [(3, 2), (4, 4), (5, 6), (6, 8), (7, 10)])
+
+    def test_mapcatting(self):
+        result = transduce(transducer=mapcatting(list),
+                           reducer=appending(),
+                           iterable=['new', 'found', 'land'])
+        self.assertListEqual(result, list("newfoundland"))
 
     def test_taking(self):
         result = transduce(transducer=taking(3),

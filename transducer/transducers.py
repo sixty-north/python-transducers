@@ -141,7 +141,7 @@ class Mapcatting(Transducer):
         self._transform = transform
 
     def step(self, result, item):
-        return reduce(self._reducer, result, self._transform(item))
+        return reduce(self._reducer, self._transform(item), result)
 
 
 def mapcatting(transform):
