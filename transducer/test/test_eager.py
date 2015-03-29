@@ -6,7 +6,7 @@ from transducer.functional import compose
 from transducer.reducers import appending, expecting_single, conjoining, adding
 from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
                                     reversing, ordering, counting, scanning, taking, dropping_while, distinct,
-                                    taking_while, dropping, element_at, mapcatting)
+                                    taking_while, dropping, element_at, mapcatting, pairwise)
 
 
 class TestSingleTransducers(unittest.TestCase):
@@ -71,6 +71,12 @@ class TestSingleTransducers(unittest.TestCase):
                            iterable=[2, 4, 5, 8, 10])
         self.assertListEqual(result, [2, 4, 5])
 
+    def test_taking_validation(self):
+        with self.assertRaises(ValueError):
+            transduce(transducer=taking(-3),
+                      reducer=appending(),
+                      iterable=[2, 4, 5, 8, 10])
+
     def test_taking_while(self):
         result = transduce(transducer=taking_while(lambda x: x < 6),
                            reducer=appending(),
@@ -83,11 +89,36 @@ class TestSingleTransducers(unittest.TestCase):
                            iterable=[2, 4, 5, 8, 10])
         self.assertListEqual(result, [8, 10])
 
+    def test_dropping_validation(self):
+        with self.assertRaises(ValueError):
+            transduce(transducer=dropping(-3),
+                      reducer=appending(),
+                      iterable=[2, 4, 5, 8, 10])
+
     def test_dropping_while(self):
         result = transduce(transducer=dropping_while(lambda x: x < 6),
                            reducer=appending(),
                            iterable=[2, 4, 5, 8, 10])
         self.assertListEqual(result, [8, 10])
+
+    def test_distinct(self):
+        result = transduce(transducer=distinct(),
+                           reducer=appending(),
+                           iterable=[1, 1, 3, 5, 5, 2, 1, 2])
+        self.assertListEqual(result, [1, 3, 5, 2])
+
+    def test_pairwise_at_least_two(self):
+        result = transduce(transducer=pairwise(),
+                           reducer=appending(),
+                           iterable=[1, 3, 5, 7, 2, 1, 9])
+        self.assertListEqual(result, [(1, 3), (3, 5), (5, 7), (7, 2), (2, 1), (1, 9)])
+
+    def test_pairwise_single(self):
+        """A single item fed into pairwise is discarded."""
+        result = transduce(transducer=pairwise(),
+                           reducer=appending(),
+                           iterable=[42])
+        self.assertListEqual(result, [])
 
     def test_element_at(self):
         result = transduce(transducer=element_at(3),

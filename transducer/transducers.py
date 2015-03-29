@@ -267,11 +267,6 @@ class Distinct(Transducer):
 def distinct():
     """Create a transducer which filters distinct items"""
 
-    # TODO: The distinct_transducer function below isn't really necessary
-    #       since it's the identity function, although distinct() should
-    #       probably support a key argument so it can be used to choose
-    #       items which are distinct based on some property
-
     def distinct_transducer(reducer):
         return Distinct(reducer)
 
@@ -293,12 +288,6 @@ class Pairwise(Transducer):
         pair = (self._previous_item, item)
         self._previous_item = item
         return self._reducer.step(result, pair)
-
-    def complete(self, result):
-        if self._previous_item is UNSET:
-            single = (self._previous_item,)
-            result = self._reducer.step(result, single)
-        self._reducer.complete(result)
 
 
 def pairwise():
