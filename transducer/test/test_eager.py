@@ -6,7 +6,7 @@ from transducer.functional import compose
 from transducer.reducers import appending, expecting_single, conjoining, adding
 from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
                                     reversing, ordering, counting, scanning, taking, dropping_while, distinct,
-                                    taking_while, dropping, element_at, mapcatting, pairwise)
+                                    taking_while, dropping, element_at, mapcatting, pairwise, batching)
 
 
 class TestSingleTransducers(unittest.TestCase):
@@ -119,6 +119,18 @@ class TestSingleTransducers(unittest.TestCase):
                            reducer=appending(),
                            iterable=[42])
         self.assertListEqual(result, [])
+
+    def test_batching_exact(self):
+        result = transduce(transducer=batching(3),
+                           reducer=appending(),
+                           iterable=[42, 12, 45, 9, 18, 3, 34, 13, 12])
+        self.assertListEqual(result, [[42, 12, 45], [9, 18, 3], [34, 13, 12]])
+
+    def test_batching_inexact(self):
+        result = transduce(transducer=batching(3),
+                           reducer=appending(),
+                           iterable=[42, 12, 45, 9, 18, 3, 34, 13])
+        self.assertListEqual(result, [[42, 12, 45], [9, 18, 3], [34, 13]])
 
     def test_element_at(self):
         result = transduce(transducer=element_at(3),
