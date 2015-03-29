@@ -13,6 +13,8 @@ def transduce(transducer, target=UNSET):
             if isinstance(accumulator, Reduced):
                 accumulator = accumulator.value
                 break
+            assert accumulator is target
     except GeneratorExit:
         pass
+    assert accumulator is target
     return reducer.complete(accumulator)
