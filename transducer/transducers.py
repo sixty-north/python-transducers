@@ -432,6 +432,34 @@ def last(predicate=None):
 # ---------------------------------------------------------------------
 
 
+class ElementAt(Transducer):
+
+    def __init__(self, reducer, index):
+        super().__init__(reducer)
+        self._index = index
+        self._counter = 0
+
+    def step(self, result, item):
+        if self._counter == self._index:
+            return Reduced(self._reducer.step(result, item))
+        self._counter += 1
+        return result
+
+
+def element_at(index):
+    """Create a transducer which obtains the item at the specified index."""
+
+    if index < 0:
+        raise ValueError("element_at used with illegal index {}".format(index))
+
+    def element_at_transducer(reducer):
+        return ElementAt(reducer, index)
+
+    return element_at_transducer
+
+# ---------------------------------------------------------------------
+
+
 class Repeating:
 
     def __init__(self, reducer, num_times):
