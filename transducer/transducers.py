@@ -4,9 +4,10 @@ The functions in this module return transducers.
 """
 from collections import deque
 from functools import reduce
-import itertools
+from itertools import islice
+
 from transducer._util import UNSET
-from transducer.functional import identity, true
+from transducer.functional import true
 from transducer.infrastructure import Reduced, Transducer
 
 
@@ -354,7 +355,7 @@ class Windowing(Transducer):
                 result = self.step(result, self._padding)
         else:
             for i in range(1, self._size):
-                result = self._reducer.step(result, list(itertools.islice(self._window, i, self._size)))
+                result = self._reducer.step(result, list(islice(self._window, i, self._size)))
         return self._reducer.complete(result)
 
 
@@ -572,37 +573,3 @@ def counting(predicate=None):
         return Counting(reducer, predicate)
 
     return counting_transducer
-
-# ---------------------------------------------------------------------
-
-
-class Grouping(Transducer):
-
-    def __init__(self, reducer, key):
-        super().__init__(reducer)
-        self._key = key
-        self._groups = {}
-
-    def step(self, result, item):
-        k = self._key(item)
-        if k not in self._groups:
-            self._groups[k] = []
-        self._groups[k].append(item)
-        return result
-
-    def complete(self, result):
-        for group in self._groups.items():
-            result = self._reducer.step(result, group)
-        return self._reducer.complete(result)
-
-
-def grouping(key=None):
-
-    key = identity if key is None else key
-
-    def grouping_transducer(reducer):
-        return Grouping(reducer, key)
-
-    return grouping_transducer
-
-# ---------------------------------------------------------------------
