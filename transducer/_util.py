@@ -29,11 +29,10 @@ def prepend(item, iterable):
     yield item
     yield from iterable
 
+_EMPTY = tuple()
 
-# noinspection PyUnreachableCode
 def empty_iter():
-    return
-    yield
+    return iter(_EMPTY)
 
 
 def iterator_or_none(iterator):
