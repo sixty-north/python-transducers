@@ -2,6 +2,9 @@
 Transducers in Python
 =====================
 
+This package is available on the Python Package Index (PyPI) as
+`transducer <https://pypi.python.org/pypi/transducer/>`_.
+
 Transducers are functions which transform reducers - hence the name.
 A reducer, in this case, is any function which you could pass to the
 ``reduce()`` function in the Python Standard Library ``functools``
@@ -23,10 +26,11 @@ the Clojurisms into more Pythonic solutions.
 
 An extended write-up of the development of Python transducers from
 scratch can be found in our series of articles
-`Understanding Transducers Through Python <http://sixty-north.com/blog/series/understanding-transducers-through-python>`_. The code developed over the course of these
-articles is substantially the same as in this ``transducer`` package,
-although the package uses some further abstractions and tools
-which are largely irrelevant to understanding how transducers work.
+`Understanding Transducers Through Python <http://sixty-north.com/blog/series/understanding-transducers-through-python>`_.
+The code developed over the course of these articles is substantially
+the same as in this ``transducer`` package, although the package uses
+some further abstractions and tools which are largely irrelevant to
+understanding how transducers work.
 
 This package, implements simple infrastructure for implementing
 transducers in Python, a selection of transducer implementations of
