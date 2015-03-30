@@ -3,6 +3,7 @@ import operator
 import unittest
 from transducer.eager import transduce
 from transducer.functional import compose
+from transducer.infrastructure import Transducer
 from transducer.reducers import appending, expecting_single, conjoining, adding
 from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
                                     reversing, ordering, counting, scanning, taking, dropping_while, distinct,
@@ -11,6 +12,12 @@ from transducer.transducers import (mapping, filtering, reducing, enumerating, f
 
 
 class TestSingleTransducers(unittest.TestCase):
+
+    def test_identity(self):
+        result = transduce(transducer=Transducer,
+                           reducer=appending(),
+                           iterable=range(5))
+        self.assertListEqual(result, [0, 1, 2, 3, 4])
 
     def test_mapping(self):
         result = transduce(transducer=mapping(lambda x: x*x),

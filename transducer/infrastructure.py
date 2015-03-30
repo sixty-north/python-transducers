@@ -33,7 +33,7 @@ class Reducer(object, metaclass=ABCMeta):
 
 
 class Transducer(Reducer):
-    """An Abstract Base Class for Transducers.
+    """An Base Class for Transducers which also serves as the identity transducer.
     """
 
     def __init__(self, reducer):
