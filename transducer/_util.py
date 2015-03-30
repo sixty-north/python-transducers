@@ -23,3 +23,22 @@ def coroutine(func):
         return g
 
     return start
+
+
+def prepend(item, iterable):
+    yield item
+    yield from iterable
+
+
+# noinspection PyUnreachableCode
+def empty_iter():
+    return
+    yield
+
+
+def iterator_or_none(iterator):
+    try:
+        first = next(iterator)
+    except StopIteration:
+        return None
+    return prepend(first, iterator)

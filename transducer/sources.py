@@ -1,5 +1,6 @@
 import random
 from time import sleep
+from transducer._util import empty_iter, prepend
 
 
 def iterable_source(iterable, target):
@@ -8,13 +9,17 @@ def iterable_source(iterable, target):
     Args:
         iterable: A series of items which will be sent to the target one by one.
         target: The target coroutine or sink.
+
+    Returns:
+        An iterator over any remaining items.
     """
-    for item in iterable:
+    it = iter(iterable)
+    for item in it:
         try:
             target.send(item)
-        except StopIteration as e:
-            return e.value
-    return None
+        except StopIteration:
+            return prepend(item, it)
+    return empty_iter()
 
 
 def poisson_source(rate, iterable, target):
@@ -26,13 +31,17 @@ def poisson_source(rate, iterable, target):
         target: The target coroutine or sink.
 
     Returns:
-        The completed value or None if iterable was exhausted and the target was closed.
+        An iterator over any remaining items.
     """
-    for item in iterable:
+    if rate <= 0.0:
+        raise ValueError("poisson_source rate {} is not positive".format(rate))
+
+    it = iter(iterable)
+    for item in it:
         duration = random.expovariate(rate)
         sleep(duration)
         try:
             target.send(item)
-        except StopIteration as e:
-            return e.value
-    return None
+        except StopIteration:
+            return prepend(item, it)
+    return empty_iter()
