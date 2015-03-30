@@ -58,10 +58,10 @@ class ExpectingSingle(Reducer):
         return None
 
     def step(self, result, item):
-        assert result is None
         self._num_steps += 1
         if self._num_steps > 1:
             raise RuntimeError("Too many steps!")
+        assert result is None
         return item
 
     def complete(self, result):
