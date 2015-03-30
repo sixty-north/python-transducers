@@ -1,6 +1,6 @@
 import unittest
 
-from transducer.functional import compose
+from transducer.functional import compose, true, identity, false
 
 
 class TestComposition(unittest.TestCase):
@@ -27,7 +27,6 @@ class TestComposition(unittest.TestCase):
         self.assertSequenceEqual([f(g(x)) for x in range(100)],
                                  [c(x) for x in range(100)])
 
-
     def test_triple(self):
         """
         compose(f, g, h)(x) -> f(g(h(x)))
@@ -39,6 +38,18 @@ class TestComposition(unittest.TestCase):
 
         self.assertSequenceEqual([f(g(h(x))) for x in range(100)],
                                  [c(x) for x in range(100)])
+
+
+class TestFunctions(unittest.TestCase):
+
+    def test_true(self):
+        self.assertTrue(true())
+
+    def test_false(self):
+        self.assertFalse(false())
+
+    def test_identity(self):
+        self.assertEqual(identity(42), 42)
 
 
 if __name__ == '__main__':
