@@ -29,7 +29,9 @@ def prepend(item, iterable):
     yield item
     yield from iterable
 
+
 _EMPTY = tuple()
+
 
 def empty_iter():
     return iter(_EMPTY)
