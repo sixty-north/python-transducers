@@ -1,9 +1,10 @@
 # Transducer's setup.py
 
-from distutils.core import setup
 import io
 import os
 import re
+
+from setuptools import setup
 
 
 def read(*names, **kwargs):
