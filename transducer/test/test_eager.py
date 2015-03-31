@@ -134,7 +134,13 @@ class TestSingleTransducers(unittest.TestCase):
                            iterable=[42, 12, 45, 9, 18, 3, 34, 13, 12])
         self.assertListEqual(result, [[42, 12, 45], [9, 18, 3], [34, 13, 12]])
 
-    def test_batching_inexact(self):
+    def test_batching_inexact_1(self):
+        result = transduce(transducer=batching(3),
+                           reducer=appending(),
+                           iterable=[42, 12, 45, 9, 18, 3, 34])
+        self.assertListEqual(result, [[42, 12, 45], [9, 18, 3], [34]])
+
+    def test_batching_inexact_2(self):
         result = transduce(transducer=batching(3),
                            reducer=appending(),
                            iterable=[42, 12, 45, 9, 18, 3, 34, 13])

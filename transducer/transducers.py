@@ -319,7 +319,7 @@ class Batching(Transducer):
         return result
 
     def complete(self, result):
-        r = self._reducer.step(result, self._pending) if len(self._pending) > 1 else result
+        r = self._reducer.step(result, self._pending) if len(self._pending) > 0 else result
         return self._reducer.complete(r)
 
 
