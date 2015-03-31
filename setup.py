@@ -13,6 +13,7 @@ def read(*names, **kwargs):
     ) as fp:
         return fp.read()
 
+
 def find_version(*file_paths):
     version_file = read(*file_paths)
     version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
@@ -21,8 +22,10 @@ def find_version(*file_paths):
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
 
+
 with open('README.rst', 'r') as readme:
     long_description = readme.read()
+
 
 setup(
     name = "transducer",
