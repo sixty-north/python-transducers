@@ -1,15 +1,6 @@
 Changes
 =======
 
-transducer 0.7
---------------
-
-Simplified and clarified much of the implementation.
-
-Dropped support for Python 3.2.
-
-Much clearer reduction to single values for transducers such as first()
-and last() in conjunction with the expecting_single() reducer.
 
 transducer 0.8
 --------------
@@ -25,11 +16,24 @@ Single-sourced the version from the transducer/__init__.py file.
 
 Adds a new reducer for producing sets.
 
+A new reducer for completing regular Python reducing functions into
+objects supporting the full reducer protocol.
+
+Numerous fixes throughout the code as a result of vastly improved
+test coverage.
+
 
 transducer 0.7
 --------------
 
 Rework to make the code closer to the code in the blog series.
+
+Much clearer reduction to single values for transducers such as first()
+and last() in conjunction with the expecting_single() reducer.
+
+Simplified and clarified much of the implementation.
+
+Dropped support for Python 3.2.
 
 
 transducer 0.6
