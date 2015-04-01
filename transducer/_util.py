@@ -43,3 +43,10 @@ def iterator_or_none(iterator):
     except StopIteration:
         return None
     return prepend(first, iterator)
+
+
+def generate(initial, func):
+    v = initial
+    while True:
+        yield v
+        v = func(v)

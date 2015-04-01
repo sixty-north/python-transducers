@@ -1,6 +1,7 @@
 from collections import deque
 import operator
 import unittest
+
 from transducer.eager import transduce
 from transducer.functional import compose
 from transducer.infrastructure import Transducer
@@ -8,7 +9,7 @@ from transducer.reducers import appending, expecting_single, conjoining, adding
 from transducer.transducers import (mapping, filtering, reducing, enumerating, first, last,
                                     reversing, ordering, counting, scanning, taking, dropping_while, distinct,
                                     taking_while, dropping, element_at, mapcatting, pairwise, batching, windowing,
-                                    repeating)
+                                    repeating, batching2, geometric_partitioning)
 
 
 class TestSingleTransducers(unittest.TestCase):
@@ -149,6 +150,30 @@ class TestSingleTransducers(unittest.TestCase):
     def test_batching_validation(self):
         with self.assertRaises(ValueError):
             transduce(transducer=batching(0),
+                      reducer=appending(),
+                      iterable=[42, 12, 45, 9, 18, 3, 34, 13])
+
+    def test_batching2_exact(self):
+        result = transduce(transducer=batching2(3),
+                           reducer=appending(),
+                           iterable=[42, 12, 45, 9, 18, 3, 34, 13, 12])
+        self.assertListEqual(result, [[42, 12, 45], [9, 18, 3], [34, 13, 12]])
+
+    def test_batching2_inexact_1(self):
+        result = transduce(transducer=batching2(3),
+                           reducer=appending(),
+                           iterable=[42, 12, 45, 9, 18, 3, 34])
+        self.assertListEqual(result, [[42, 12, 45], [9, 18, 3], [34]])
+
+    def test_batching2_inexact_2(self):
+        result = transduce(transducer=batching2(3),
+                           reducer=appending(),
+                           iterable=[42, 12, 45, 9, 18, 3, 34, 13])
+        self.assertListEqual(result, [[42, 12, 45], [9, 18, 3], [34, 13]])
+
+    def test_batching2_validation(self):
+        with self.assertRaises(ValueError):
+            transduce(transducer=batching2(0),
                       reducer=appending(),
                       iterable=[42, 12, 45, 9, 18, 3, 34, 13])
 
@@ -328,6 +353,24 @@ class TestSingleTransducers(unittest.TestCase):
             iterable=list(range(3)) * 2)
         self.assertListEqual(list(result), [0, 1, 4])
 
+
+class TestGeometricPartitioning(unittest.TestCase):
+
+    def test_defaults(self):
+        result = transduce(transducer=geometric_partitioning(),
+                           reducer=appending(),
+                           iterable=range(130000))
+        lengths = list(map(len, result))
+        self.assertListEqual(lengths, [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384,
+                                       32768, 32768, 31697])
+
+    def test_run_length_2(self):
+        result = transduce(transducer=geometric_partitioning(run_length=2),
+                           reducer=appending(),
+                           iterable=range(130000))
+        lengths = list(map(len, result))
+        self.assertListEqual(lengths, [1, 1, 2, 2, 4, 4, 8, 8, 16, 16, 32, 32, 64, 64, 128, 128, 256, 256, 512, 512,
+                                       1024, 1024, 2048, 2048, 4096, 4096, 8192, 8192, 16384, 16384, 32768, 31698])
 
 class TestComposedTransducers(unittest.TestCase):
 

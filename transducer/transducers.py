@@ -5,9 +5,10 @@ The functions in this module return transducers.
 from collections import deque
 from functools import reduce
 from itertools import islice
+from transducer import lazy
 
-from transducer._util import UNSET
-from transducer.functional import true
+from transducer._util import UNSET, generate
+from transducer.functional import true, compose
 from transducer.infrastructure import Reduced, Transducer
 
 
@@ -15,6 +16,8 @@ from transducer.infrastructure import Reduced, Transducer
 # functions which transform one reducer to another
 
 # ---------------------------------------------------------------------
+from transducer.reducers import appending
+
 
 class Mapping(Transducer):
 
@@ -337,6 +340,48 @@ def batching(size):
 # ---------------------------------------------------------------------
 
 
+class Batching2(Transducer):
+
+    def __init__(self, reducer, size, batch_reducer):
+        super().__init__(reducer)
+        self._size = size
+        self._batch_reducer = batch_reducer
+        self._pending = self._batch_reducer.initial()
+        self._counter = 0
+
+    def step(self, result, item):
+        self._counter += 1
+        self._pending = self._batch_reducer.step(self._pending, item)
+        # TODO: What if we get isinstance(self._pending, Reduced) here?
+        if self._counter == self._size:
+            batch = self._pending
+            self._counter = 0
+            self._pending = self._batch_reducer.initial()
+            return self._reducer(result, batch)
+        return result
+
+    def complete(self, result):
+        r = self._reducer.step(result, self._pending) if self._counter > 0 else result
+        return self._reducer.complete(r)
+
+
+def batching2(size, batch_reducer=None):
+    """Create a transducer which produces non-overlapping batches."""
+
+    if size < 1:
+        raise ValueError("batching() size must be at least 1")
+
+    if batch_reducer is None:
+        batch_reducer = appending()
+
+    def batching2_transducer(reducer):
+        return Batching2(reducer, size, batch_reducer)
+
+    return batching2_transducer
+
+#---------------------------------------------------------------------------
+
+
 class Windowing(Transducer):
 
     def __init__(self, reducer, size, padding):
@@ -573,3 +618,42 @@ def counting(predicate=None):
         return Counting(reducer, predicate)
 
     return counting_transducer
+
+
+# ---------------------------------------------------------------------
+
+
+class GeometricPartitioning(Transducer):
+
+    def __init__(self, reducer, min_partition_size, max_partition_size, run_length):
+        super().__init__(reducer)
+
+        self._partition_sizes = lazy.transduce(
+            transducer=compose(
+                mapping(lambda s: min(s, max_partition_size)),
+                repeating(run_length)),
+            iterable=generate(min_partition_size, lambda s: 2*s))
+
+        self._size = next(self._partition_sizes)
+        self._pending = []
+
+    def step(self, result, item):
+        self._pending.append(item)
+        if len(self._pending) == self._size:
+            batch = self._pending
+            self._pending = []
+            self._size = next(self._partition_sizes)
+            return self._reducer(result, batch)
+        return result
+
+    def complete(self, result):
+        r = self._reducer.step(result, self._pending) if len(self._pending) > 0 else result
+        return self._reducer.complete(r)
+
+
+def geometric_partitioning(min_partition_size=1, max_partition_size=32768, run_length=1):
+
+    def geometric_partitioning_transducer(reducer):
+        return GeometricPartitioning(reducer, min_partition_size, max_partition_size, run_length)
+
+    return geometric_partitioning_transducer
