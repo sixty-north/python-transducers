@@ -33,6 +33,37 @@ def conjoining():
     return _conjoining
 
 
+class Concatenating(Reducer):
+
+    def initial(self):
+        return ""
+
+    def step(self, result, item):
+        return result + item
+
+_concatenating = Concatenating()
+
+
+def concatenating():
+    return _concatenating
+
+
+class Extending(Reducer):
+
+    def initial(self):
+        return []
+
+    def step(self, result, item):
+        result.extend(item)
+        return result
+
+_extending = Extending()
+
+
+def extending():
+    return _extending
+
+
 class Adding(Reducer):
 
     def initial(self):
