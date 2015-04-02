@@ -14,7 +14,7 @@ class Reduced:
         return self._value
 
 
-class Reducer(object, metaclass=ABCMeta):
+class Reducer(metaclass=ABCMeta):
 
     @abstractmethod
     def initial(self):
@@ -30,6 +30,16 @@ class Reducer(object, metaclass=ABCMeta):
     def __call__(self, result, item):
         """Reducing objects are callable so they can be used like functions."""
         return self.step(result, item)
+
+    def combine(self, left, right):
+        """For associative reducers, return the combination of two partial results.
+
+        Returns:
+            For associative reducers returns the combined result. For non-associative reducers
+            returns NotImplemented. (Note: Does not raise NotImplementedError in this case!)
+
+        """
+        return NotImplemented
 
 
 class Transducer(Reducer):
@@ -75,3 +85,6 @@ class Transducer(Reducer):
             The completed result.
         """
         return self._reducer.complete(result)
+
+    def combine(self, left, right):
+        return self._reducer.combine(left, right)

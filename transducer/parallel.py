@@ -1,6 +1,7 @@
+from functools import reduce
 from multiprocessing.pool import Pool
 from transducer._util import UNSET
-from transducer.infrastructure import Reduced, Transducer
+from transducer.infrastructure import Reduced
 import transducer.eager as eager
 
 
@@ -9,25 +10,23 @@ from transducer.reducers import appending
 from transducer.transducers import geometric_partitioning
 
 
-def transduce(transducer, series_reducer, iterable, parallel_reducer=None, init=UNSET):
-    if parallel_reducer is None:
-        parallel_reducer = series_reducer
+def transduce(transducer, reducer, iterable, init=UNSET):
+
+    r = transducer(reducer)
+
+    def make_initial():
+        return r.initial() if init is UNSET else init
+
+    if r.combine(make_initial(), make_initial()) is NotImplemented:
+        raise TypeError("transducer(reducer) is not associative and cannot be parallelized.")
 
     partitions = eager.transduce(transducer=geometric_partitioning(),
                                  reducer=appending(),
                                  iterable=iterable)
-
-    r = transducer(series_reducer)
-
     pool = Pool()
-    args = [(r, p, r.initial() if init is UNSET else init) for p in partitions]
-
+    args = [(r, p, make_initial()) for p in partitions]
     reduced_partitions = pool.starmap(series_transduce, args)
-
-    combined_result = eager.transduce(transducer=Transducer,  # The identity transducer
-                                      reducer=parallel_reducer,
-                                      iterable=reduced_partitions)
-
+    combined_result = reduce(r.combine, reduced_partitions, make_initial())
     return r.complete(combined_result)
 
 

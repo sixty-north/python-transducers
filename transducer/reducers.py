@@ -11,6 +11,10 @@ class Appending(Reducer):
         result.append(item)
         return result
 
+    def combine(self, left, right):
+        left.extend(right)
+        return left
+
 _appending = Appending()
 
 
@@ -26,6 +30,9 @@ class Conjoining(Reducer):
     def step(self, result, item):
         return result + type(result)((item,))
 
+    def combine(self, left, right):
+        return left + right
+
 _conjoining = Conjoining()
 
 
@@ -40,6 +47,9 @@ class Concatenating(Reducer):
 
     def step(self, result, item):
         return result + item
+
+    def combine(self, left, right):
+        return self.step(left, right)
 
 _concatenating = Concatenating()
 
@@ -57,6 +67,9 @@ class Extending(Reducer):
         result.extend(item)
         return result
 
+    def combine(self, left, right):
+        return self.step(left, right)
+
 _extending = Extending()
 
 
@@ -72,6 +85,10 @@ class Adding(Reducer):
     def step(self, result, item):
         result.add(item)
         return result
+
+    def combine(self, left, right):
+        left |= right
+        return left
 
 _adding = Adding()
 
@@ -131,9 +148,10 @@ def sending():
 
 class Completing(Reducer):
 
-    def __init__(self, reducer, identity):
+    def __init__(self, reducer, identity, combiner):
         self._reducer = reducer
         self._identity = identity
+        self._combiner = combiner
 
     def initial(self):
         return self._identity
@@ -141,8 +159,11 @@ class Completing(Reducer):
     def step(self, result, item):
         return self._reducer(result, item)
 
+    def combine(self, left, right):
+        return self._combiner(left, right) if (self._combiner is not None) else super().combine(left, right)
 
-def completing(reducer, identity=None):
+
+def completing(reducer, identity=None, combiner=None):
     """Complete a regular reducing function to support the Reducer protocol.
 
     Args:
@@ -153,4 +174,4 @@ def completing(reducer, identity=None):
         An instance of the Completing reducer.
     """
 
-    return Completing(reducer, identity)
+    return Completing(reducer, identity, combiner)

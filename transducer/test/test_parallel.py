@@ -1,7 +1,7 @@
 import unittest
 
 import transducer.parallel as parallel
-from transducer.reducers import appending, extending
+from transducer.reducers import appending
 from transducer.transducers import mapping
 
 
@@ -18,8 +18,7 @@ class TestParallel(unittest.TestCase):
 
         result = parallel.transduce(
             transducer=mapping(square),
-            series_reducer=appending(),
-            parallel_reducer=extending(),
+            reducer=appending(),
             iterable=items)
 
         self.assertListEqual(result, [square(x) for x in items])
