@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from functools import wraps
 
 
@@ -50,3 +51,8 @@ def generate(initial, func):
     while True:
         yield v
         v = func(v)
+
+
+@contextmanager
+def null_context_manager():
+    yield
