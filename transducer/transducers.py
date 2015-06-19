@@ -8,7 +8,7 @@ from itertools import islice
 from transducer import lazy
 
 from transducer._util import UNSET, generate
-from transducer.functional import true, compose
+from transducer.functional import true, compose, identity
 from transducer.infrastructure import Reduced, Transducer
 
 
@@ -29,7 +29,7 @@ class Mapping(Transducer):
         return self._reducer(result, self._transform(item))
 
 
-def mapping(transform):
+def mapping(transform=identity):
     """Create a mapping transducer with the given transform"""
 
     def mapping_transducer(reducer):
@@ -63,13 +63,13 @@ def filtering(predicate):
 
 class Reducing(Transducer):
 
-    def __init__(self, reducer, reducer2, init=UNSET):
+    def __init__(self, reducer, reducing_function, init=UNSET):
         super().__init__(reducer)
-        self._reducer2 = reducer2
-        self._accumulator = init  # TODO: Should we try to call reducer2.initial() here?
+        self.reducing_function = reducing_function
+        self._accumulator = init
 
     def step(self, result, item):
-        self._accumulator = item if self._accumulator is UNSET else self._reducer2(self._accumulator, item)
+        self._accumulator = item if self._accumulator is UNSET else self.reducing_function(self._accumulator, item)
         return result
 
     def complete(self, result):
@@ -77,13 +77,11 @@ class Reducing(Transducer):
         return self._reducer.complete(result)
 
 
-def reducing(reducer, init=UNSET):
+def reducing(reducing_function, init=UNSET):
     """Create a reducing transducer with the given reducer"""
 
-    reducer2 = reducer
-
     def reducing_transducer(reducer):
-        return Reducing(reducer, reducer2, init)
+        return Reducing(reducer, reducing_function, init)
 
     return reducing_transducer
 
@@ -92,23 +90,21 @@ def reducing(reducer, init=UNSET):
 
 class Scanning(Transducer):
 
-    def __init__(self, reducer, reducer2, init=UNSET):
+    def __init__(self, reducer, reducing_function, init=UNSET):
         super().__init__(reducer)
-        self._reducer2 = reducer2
-        self._accumulator = init  # TODO: Should we try to call reducer2.initial() here?
+        self._reducing_function = reducing_function
+        self._accumulator = init
 
     def step(self, result, item):
-        self._accumulator = item if self._accumulator is UNSET else self._reducer2(self._accumulator, item)
+        self._accumulator = item if self._accumulator is UNSET else self._reducing_function(self._accumulator, item)
         return self._reducer.step(result, self._accumulator)
 
 
-def scanning(reducer, init=UNSET):
+def scanning(reducing_function, init=UNSET):
     """Create a scanning reducer."""
 
-    reducer2 = reducer
-
     def scanning_transducer(reducer):
-        return Scanning(reducer, reducer2, init)
+        return Scanning(reducer, reducing_function, init)
 
     return scanning_transducer
 
