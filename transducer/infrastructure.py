@@ -31,16 +31,6 @@ class Reducer(metaclass=ABCMeta):
         """Reducing objects are callable so they can be used like functions."""
         return self.step(result, item)
 
-    def combine(self, left, right):
-        """For associative reducers, return the combination of two partial results.
-
-        Returns:
-            For associative reducers returns the combined result. For non-associative reducers
-            returns NotImplemented. (Note: Does not raise NotImplementedError in this case!)
-
-        """
-        return NotImplemented
-
 
 class Transducer(Reducer):
     """An Base Class for Transducers which also serves as the identity transducer.
@@ -85,6 +75,3 @@ class Transducer(Reducer):
             The completed result.
         """
         return self._reducer.complete(result)
-
-    def combine(self, left, right):
-        return self._reducer.combine(left, right)
