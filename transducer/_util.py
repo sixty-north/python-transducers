@@ -4,6 +4,7 @@ from functools import wraps
 
 #  A sentinel for indicating unset function arguments in places
 #  where None would be a legitimate value.
+
 UNSET = object()
 
 
@@ -52,7 +53,3 @@ def generate(initial, func):
         yield v
         v = func(v)
 
-
-@contextmanager
-def null_context_manager():
-    yield
