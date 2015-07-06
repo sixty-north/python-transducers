@@ -339,15 +339,16 @@ def batching(size):
 
 class Windowing(Transducer):
 
-    def __init__(self, reducer, size, padding):
+    def __init__(self, reducer, size, padding, window_type):
         super().__init__(reducer)
         self._size = size
         self._padding = padding
         self._window = deque(maxlen=size) if padding is UNSET else deque([padding] * size, maxlen=size)
+        self._window_type = window_type
 
     def step(self, result, item):
         self._window.append(item)
-        return self._reducer.step(result, tuple(self._window))
+        return self._reducer.step(result, self._window_type(self._window))
 
     def complete(self, result):
         if self._padding is not UNSET:
@@ -356,18 +357,18 @@ class Windowing(Transducer):
         else:
             while len(self._window) > 1:
                 self._window.popleft()
-                result = self._reducer.step(result, tuple(self._window))
+                result = self._reducer.step(result, self._window_type(self._window))
         return self._reducer.complete(result)
 
 
-def windowing(size, padding=UNSET):
+def windowing(size, padding=UNSET, window_type=tuple):
     """Create a transducer which produces a moving window over items."""
 
     if size < 1:
         raise ValueError("windowing() size {} is not at least 1".format(size))
 
     def windowing_transducer(reducer):
-        return Windowing(reducer, size, padding)
+        return Windowing(reducer, size, padding, window_type)
 
     return windowing_transducer
 
