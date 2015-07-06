@@ -1,3 +1,4 @@
+from itertools import chain
 from transducer.infrastructure import Reducer, Reduced
 from transducer.sinks import null_sink
 
@@ -24,7 +25,7 @@ class Conjoining(Reducer):
         return tuple()
 
     def step(self, result, item):
-        return result + type(result)((item,))
+        return type(result)(chain(result, (item,)))
 
 _conjoining = Conjoining()
 
