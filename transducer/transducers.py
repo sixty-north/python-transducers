@@ -347,15 +347,16 @@ class Windowing(Transducer):
 
     def step(self, result, item):
         self._window.append(item)
-        return self._reducer.step(result, list(self._window))
+        return self._reducer.step(result, tuple(self._window))
 
     def complete(self, result):
         if self._padding is not UNSET:
             for _ in range(self._size - 1):
                 result = self.step(result, self._padding)
         else:
-            for i in range(1, self._size):
-                result = self._reducer.step(result, list(islice(self._window, i, self._size)))
+            while len(self._window) > 1:
+                self._window.popleft()
+                result = self._reducer.step(result, tuple(self._window))
         return self._reducer.complete(result)
 
 
@@ -363,7 +364,7 @@ def windowing(size, padding=UNSET):
     """Create a transducer which produces a moving window over items."""
 
     if size < 1:
-        raise ValueError("windowing() size must be at least 1")
+        raise ValueError("windowing() size {} is not at least 1".format(size))
 
     def windowing_transducer(reducer):
         return Windowing(reducer, size, padding)
