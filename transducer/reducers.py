@@ -50,6 +50,22 @@ def adding():
     return _adding
 
 
+class Joining(Reducer):
+
+    def __init__(self, separator):
+        self._separator = separator
+
+    def initial(self):
+        return []
+
+    def step(self, result, item):
+        result.append(item)
+        return result
+
+    def complete(self, result):
+        return self._separator.join(result)
+
+
 class ExpectingSingle(Reducer):
 
     def __init__(self):
