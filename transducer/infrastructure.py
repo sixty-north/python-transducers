@@ -21,6 +21,9 @@ class Reduced:
     def value(self):
         return self._value
 
+    def __repr__(self):
+        return '{}({!r})'.format(self.__class__.__name__, self._value)
+
 
 class Reducer(object, metaclass=ABCMeta):
 
