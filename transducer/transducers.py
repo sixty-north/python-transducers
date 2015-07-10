@@ -4,7 +4,6 @@ The functions in this module return transducers.
 """
 from collections import deque
 from functools import reduce
-from itertools import islice
 
 from transducer._util import UNSET
 from transducer.functional import true
