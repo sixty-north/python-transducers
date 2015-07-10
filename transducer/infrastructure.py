@@ -4,10 +4,18 @@ from abc import ABCMeta, abstractmethod
 
 
 class Reduced:
-    """A sentinel 'box' used to return the final value of a reduction."""
+    """A sentinel 'box' used to return the final value of a reduction.
 
-    def __init__(self, value):
-        self._value = value
+    Wrapping a value in a Reduced instance is idempotent, so
+    Reduced(Reduced(item)) is equivalent to Reduced(item)
+    """
+
+    def __new__(cls, value):
+        if isinstance(value, cls):
+            return value
+        obj = super().__new__(cls)
+        obj._value = value
+        return obj
 
     @property
     def value(self):
