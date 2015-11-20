@@ -14,7 +14,7 @@ result.  Transducers provide us with a convenient means to compose
 simple reducers into more complex and capable reducers.
 
 Furthermore, transducers facilitate the clean separation of
-concerns concerns of how source values are input, how they are
+concerns of how source values are input, how they are
 processed by reducers, and the how results output. This allows the
 same transducers to be (re)used with many sources and destinations
 of data, not just with iterable series.
