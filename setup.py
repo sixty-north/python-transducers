@@ -35,7 +35,7 @@ setup(
     description = "Transducers, similar to those in Clojure",
     author = "Sixty North AS",
     author_email = "rob@sixty-north.com",
-    url = "http://code.sixty-north.com/python-transducers",
+    url = "https://github.com/sixty-north/python-transducers",
     keywords = ["Python", "functional"],
     license="MIT License",
     classifiers = [
