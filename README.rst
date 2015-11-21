@@ -26,9 +26,7 @@ Build status:
     :target: https://readthedocs.org/projects/python-transducers/?badge=latest
     :alt: Documentation Status
 
-.. note::
-
-   Documentation is very much a work in progress.
+Note: Documentation is very much a work in progress.
 
 What are transducers?
 =====================
