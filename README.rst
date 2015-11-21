@@ -22,6 +22,13 @@ Build status:
     :target: https://travis-ci.org/sixty-north/python-transducers
     :alt: Build Status
 
+.. image:: https://readthedocs.org/projects/python-transducers/badge/?version=latest
+    :target: https://readthedocs.org/projects/python-transducers/?badge=latest
+    :alt: Documentation Status
+
+.. note::
+
+   Documentation is very much a work in progress.
 
 What are transducers?
 =====================
