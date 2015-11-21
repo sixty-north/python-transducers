@@ -2,8 +2,29 @@
 Transducers in Python
 =====================
 
+This is a port of the *transducer* concept from Clojure to Python,
+with an emphasis on providing as Pythonic as interpretation of
+transducers as possible, rather than reproducing Clojurisms more
+literally.
+
+Installable Python package
+==========================
+
 This package is available on the Python Package Index (PyPI) as
 `transducer <https://pypi.python.org/pypi/transducer/>`_.
+
+Status
+======
+
+Build status:
+
+.. image:: https://travis-ci.org/sixty-north/segpy.svg?branch=master
+    :target: https://travis-ci.org/sixty-north/python-transducers
+    :alt: Build Status
+
+
+What are transducers?
+=====================
 
 Transducers are functions which transform reducers - hence the name.
 A reducer, in this case, is any function which you could pass to the
