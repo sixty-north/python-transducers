@@ -26,7 +26,18 @@ class Mapping(Transducer):
 
 
 def mapping(transform):
-    """Create a mapping transducer with the given transform"""
+    """Create a mapping transducer with the given transform.
+
+    Args:
+        transform: A single-argument function which will be applied to
+            each input element to produce the corresponding output
+            element.
+
+    Returns: A mapping transducer: A single argument function which,
+        when passed a reducing function, returns a new reducing function
+        which applies the specified mapping transform function *before*
+        delegating to the original reducer.
+    """
 
     def mapping_transducer(reducer):
         return Mapping(reducer, transform)
@@ -47,7 +58,19 @@ class Filtering(Transducer):
 
 
 def filtering(predicate):
-    """Create a filtering transducer with the given predicate"""
+    """Create a filtering transducer with the given predicate.
+
+    Args:
+        predicate: A single-argument function which will be used to
+            test each element and which must return True or False. Only
+            those elements for which this function returns True will be
+            retained.
+
+    Returns: A filtering transducer: A single argument function which,
+        when passed a reducing function, returns a new reducing function
+        which passes only those items in the input stream which match
+        satisfy the predicate to the original reducer.
+    """
 
     def filtering_transducer(reducer):
         return Filtering(reducer, predicate)
@@ -74,7 +97,19 @@ class Reducing(Transducer):
 
 
 def reducing(reducer, init=UNSET):
-    """Create a reducing transducer with the given reducer"""
+    """Create a reducing transducer with the given reducer.
+
+    Args:
+        reducer: A two-argument function which will be used to combine the
+            partial cumulative result in the first argument with the next
+            item from the input stream in the second argument.
+
+    Returns: A reducing transducer: A single argument function which,
+        when passed a reducing function, returns a new reducing function
+        which entirely reduces the input stream using 'reducer' before
+        passing the result to the reducing function passed to the
+        transducer.
+    """
 
     reducer2 = reducer
 

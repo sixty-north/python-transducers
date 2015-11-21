@@ -153,7 +153,7 @@ class TestSingleTransducers(unittest.TestCase):
                       iterable=[42, 12, 45, 9, 18, 3, 34, 13])
 
     def test_windowing_no_padding(self):
-        result = transduce(transducer=windowing(3),
+        result = transduce(transducer=windowing(3, window_type=list),
                            reducer=appending(),
                            iterable=[42, 12, 45, 9, 18, 3, 34, 13])
         self.assertListEqual(result,
@@ -169,7 +169,7 @@ class TestSingleTransducers(unittest.TestCase):
                               [13]])
 
     def test_windowing_padding(self):
-        result = transduce(transducer=windowing(3, padding=0),
+        result = transduce(transducer=windowing(3, padding=0, window_type=list),
                            reducer=appending(),
                            iterable=[42, 12, 45, 9, 18, 3, 34, 13])
         self.assertListEqual(result,

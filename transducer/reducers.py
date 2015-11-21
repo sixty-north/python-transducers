@@ -25,7 +25,7 @@ class Conjoining(Reducer):
         return tuple()
 
     def step(self, result, item):
-        return type(result)(chain(result, (item,)))
+        return result + type(result)((item,))
 
 _conjoining = Conjoining()
 
