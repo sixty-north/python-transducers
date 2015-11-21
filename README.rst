@@ -18,7 +18,7 @@ Status
 
 Build status:
 
-.. image:: https://travis-ci.org/sixty-north/segpy.svg?branch=master
+.. image:: https://travis-ci.org/sixty-north/python-transducers.svg?branch=master
     :target: https://travis-ci.org/sixty-north/python-transducers
     :alt: Build Status
 
