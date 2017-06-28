@@ -1,4 +1,3 @@
-from itertools import chain
 from transducer.infrastructure import Reducer, Reduced
 from transducer.sinks import null_sink
 
@@ -140,3 +139,34 @@ def completing(reducer, identity=None):
     """
 
     return Completing(reducer, identity)
+
+
+class Effecting(Reducer):
+
+    def __init__(self, f):
+        if not callable(f):
+            raise TypeError("{f} is not callable".format(f=f))
+        self._f = f
+
+    def initial(self):
+        return None
+
+    def step(self, result, item):
+        return self._f(item)
+
+
+def effecting(f):
+    """Perform a non-pure side-effect by invoking a callable.
+
+    Args:
+        f: A unary function to which the current item will be passed.
+           Any return value from this function will be used as the
+           next intermediate result.  Note that this function does
+           not accept the intermediate result, so it is not a
+           reducing function. As such, this transducer is mostly
+           useful for invoking effectful functions such as print.
+
+    Returns:
+        An instance of the Effecting reducer.
+    """
+    return Effecting(f)
