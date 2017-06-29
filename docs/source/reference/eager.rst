@@ -12,7 +12,7 @@
 
      transduce
 
-  .. autofunction:: transduce(transducer, reducer, iterable, init=UNSET)
+  .. autofunction:: transduce(transducer, reducer, iterating, init=UNSET)
 
      .. rubric:: Examples
 

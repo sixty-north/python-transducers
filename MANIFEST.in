@@ -1,5 +1,5 @@
 include LICENSE.txt
 include README.md
 recursive-include docs/build/html *.html *.css *.png *.js
-recursive-include transducer/test *.py
-recursive-include transducer/examples *.py
+recursive-include test *.py
+recursive-include examples *.py
